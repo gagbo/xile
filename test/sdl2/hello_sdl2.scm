@@ -1,4 +1,4 @@
-#!/usr/bin/env -S guile -e main -s
+#!/usr/bin/env -S guile -s
 !#
 ;; coding: utf-8
 (use-modules (sdl2)
