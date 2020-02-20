@@ -1,0 +1,15 @@
+#+TITLE: [WIP] Xile : Xi + Guile
+
+Let's find out if Guile goes with everything ; and make a front-end for Xi
+Editor using GNU Guile and libraries.
+
+* Dependencies
+
+I target Guile 3.0 with this little endeavour
+
+* Objectives
+
+- Learn about using a lisp in a complex project
+- Play with SDL2 a little bit
+- See how difficult it is to build software with a json interface to a provider
+  (here we are using [[https://github.com/xi-editor/xi-editor][Xi Editor]] as the core text editor)
