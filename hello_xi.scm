@@ -4,8 +4,11 @@
 (use-modules (ice-9 popen)
              (ice-9 threads)
              ;; (ice-9 getopt-long) ;; for CLI options
+             (ice-9 suspendable-ports)
              (ice-9 rdelim)
              (json))
+
+(install-suspendable-ports!)
 
 ;; Debugging / Logging
 (define (xile--debug severity message)
@@ -30,30 +33,33 @@
 
 ;; Here the message is parsed JSON. To assert
 (define (xile--msg-dispatch message)
-  (write-line message (current-error-port))
-  )
+  (write-line message (current-error-port)))
 
 (define (xile--msg-handler port)
   (while (not (port-closed? port))
     (xile--msg-read port)))
 
+;; Socket opening function
+(define (xile--open path)
+  (let* ((xi-pipes (pipe)))
+    (setvbuf (car xi-pipes) 'line)
+    (setvbuf (cdr xi-pipes) 'line)
+    (with-output-to-port (cdr xi-pipes)
+        (let ((from-xi (car xi-pipes))
+               (to-xi (open-output-pipe path)))
+          (lambda () (list from-xi to-xi))))))
 
 ;; Main
 (define (main args)
-  (let* ((xi-proc (open-input-output-pipe "xi-core"))
+  (let* ((xi-proc (xile--open "xi-core"))
          (init-client (xile--msg-init))
-         (listener (make-thread xile--msg-handler xi-proc)))
-
-    ;; Flush I/O with Xi on each line
-    (setvbuf xi-proc 'line)
+         (listener (make-thread xile--msg-handler (car xi-proc))))
 
     ;; Init code
-    (xile--msg-send xi-proc init-client)
+    (xile--msg-send (cadr xi-proc) init-client)
 
-    ;; TODO : event loop thread instead of joining without timeout
-    (usleep 500000)
-    ;; TODO : Understand why listener thread doesn't die here
-    (write-line "Because of a bug, you need to Control-C to quit for now")
-    (cancel-thread listener)
+    ;; TODO : event loop thread instead of joining
+    (join-thread listener (+ 2 (current-time)))
 
-    (close-pipe xi-proc)))
+    (close-port (cadr xi-proc))
+    (close-port (car xi-proc))))
