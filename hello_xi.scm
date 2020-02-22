@@ -51,14 +51,6 @@
             (to-xi (open-output-pipe path)))
         (cons from-xi to-xi)))))
 
-;; Draw function
-(define (draw ren)
-  (let* ((surface (load-bmp "test/sdl2/hello.bmp"))
-         (texture (surface->texture ren surface)))
-    (clear-renderer ren)
-    (render-copy ren texture)
-    (present-renderer ren)))
-
 ;; Main
 (define (main args)
   (let* ((xi-proc (xile--open "xi-core"))
