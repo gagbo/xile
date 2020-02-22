@@ -27,9 +27,8 @@
 
 ;; Xile protocol messages deserialization / receiving
 (define (xile--msg-read port)
-  (when (char-ready? port)
-    (xile--debug-info "reading one line")
-    (xile--msg-dispatch (json->scm port))))
+  (xile--debug-info "waiting for one line")
+  (xile--msg-dispatch (json->scm port)))
 
 ;; Here the message is parsed JSON. To assert
 (define (xile--msg-dispatch message)
@@ -44,10 +43,12 @@
   (let* ((xi-pipes (pipe)))
     (setvbuf (car xi-pipes) 'line)
     (setvbuf (cdr xi-pipes) 'line)
-    (with-output-to-port (cdr xi-pipes)
-        (let ((from-xi (car xi-pipes))
-               (to-xi (open-output-pipe path)))
-          (lambda () (list from-xi to-xi))))))
+    ;; Tried with-output-to-port but it didn't work for some reason
+    ;; and sent the output of xi-core process to stdout
+    (parameterize ((current-output-port (cdr xi-pipes)))
+      (let ((from-xi (car xi-pipes))
+            (to-xi (open-output-pipe path)))
+        (cons from-xi to-xi)))))
 
 ;; Main
 (define (main args)
@@ -56,10 +57,10 @@
          (listener (make-thread xile--msg-handler (car xi-proc))))
 
     ;; Init code
-    (xile--msg-send (cadr xi-proc) init-client)
+    (xile--msg-send (cdr xi-proc) init-client)
 
     ;; TODO : event loop thread instead of joining
     (join-thread listener (+ 2 (current-time)))
 
-    (close-port (cadr xi-proc))
+    (close-port (cdr xi-proc))
     (close-port (car xi-proc))))
