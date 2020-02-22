@@ -6,7 +6,12 @@
              ;; (ice-9 getopt-long) ;; for CLI options
              (ice-9 suspendable-ports)
              (ice-9 rdelim)
-             (json))
+             (json)
+             (sdl2)
+             (sdl2 render)
+             (sdl2 surface)
+             (sdl2 video))
+
 
 (install-suspendable-ports!)
 
@@ -50,6 +55,14 @@
             (to-xi (open-output-pipe path)))
         (cons from-xi to-xi)))))
 
+;; Draw function
+(define (draw ren)
+  (let* ((surface (load-bmp "test/sdl2/hello.bmp"))
+         (texture (surface->texture ren surface)))
+    (clear-renderer ren)
+    (render-copy ren texture)
+    (present-renderer ren)))
+
 ;; Main
 (define (main args)
   (let* ((xi-proc (xile--open "xi-core"))
@@ -58,11 +71,18 @@
          (init-client (xile--msg-init))
          (listener (make-thread xile--msg-handler port-from-xi)))
 
-    ;; Init code
+    ;; Window init code
+    (sdl-init)
+
+    ;; Xi init code
     (xile--msg-send port-to-xi init-client)
 
-    ;; TODO : event loop thread instead of joining
-    (join-thread listener (+ 2 (current-time)))
+    (call-with-window (make-window)
+                      (lambda (window)
+                        (call-with-renderer (make-renderer window) draw)
+                        ;; TODO : event loop thread instead of joining
+                        (join-thread listener (+ 2 (current-time)))))
 
     (close-port port-to-xi)
-    (close-port port-from-xi)))
+    (close-port port-from-xi)
+    (sdl-quit)))
