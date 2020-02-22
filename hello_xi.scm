@@ -6,11 +6,7 @@
              ;; (ice-9 getopt-long) ;; for CLI options
              (ice-9 suspendable-ports)
              (ice-9 rdelim)
-             (json)
-             (sdl2)
-             (sdl2 render)
-             (sdl2 surface)
-             (sdl2 video))
+             (json))
 
 
 (install-suspendable-ports!)
@@ -71,18 +67,11 @@
          (init-client (xile--msg-init))
          (listener (make-thread xile--msg-handler port-from-xi)))
 
-    ;; Window init code
-    (sdl-init)
-
     ;; Xi init code
     (xile--msg-send port-to-xi init-client)
 
-    (call-with-window (make-window)
-                      (lambda (window)
-                        (call-with-renderer (make-renderer window) draw)
-                        ;; TODO : event loop thread instead of joining
-                        (join-thread listener (+ 2 (current-time)))))
+    ;; TODO : event loop thread instead of joining
+    (join-thread listener (+ 2 (current-time)))
 
     (close-port port-to-xi)
-    (close-port port-from-xi)
-    (sdl-quit)))
+    (close-port port-from-xi)))
