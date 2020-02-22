@@ -53,14 +53,16 @@
 ;; Main
 (define (main args)
   (let* ((xi-proc (xile--open "xi-core"))
+         (port-from-xi (car xi-proc))
+         (port-to-xi (cdr xi-proc))
          (init-client (xile--msg-init))
-         (listener (make-thread xile--msg-handler (car xi-proc))))
+         (listener (make-thread xile--msg-handler port-from-xi)))
 
     ;; Init code
-    (xile--msg-send (cdr xi-proc) init-client)
+    (xile--msg-send port-to-xi init-client)
 
     ;; TODO : event loop thread instead of joining
     (join-thread listener (+ 2 (current-time)))
 
-    (close-port (cdr xi-proc))
-    (close-port (car xi-proc))))
+    (close-port port-to-xi)
+    (close-port port-from-xi)))
