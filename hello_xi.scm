@@ -53,12 +53,19 @@
             (to-xi (open-output-pipe path)))
         (cons from-xi to-xi)))))
 
+(define (xile-listener-thread handler-proc port)
+  (parameterize ((current-output-port (open "logs/xile-out.log" (logior O_CREAT O_WRONLY)))
+                 (current-error-port (open "logs/xile-err.log" (logior O_CREAT O_WRONLY))))
+    (make-thread handler-proc port)
+    )
+  )
+
 (define (xile-setup)
   (let* ((xi-proc (xile--open "xi-editor/rust/target/release/xi-core"))
          (port-from-xi (car xi-proc))
          (port-to-xi (cdr xi-proc))
          (init-client (xile--msg-init '()))
-         (listener (make-thread xile--msg-handler port-from-xi)))
+         (listener (xile-listener-thread xile--msg-handler port-from-xi)))
     (cons listener (cons port-from-xi port-to-xi))))
 
 ;; Main
@@ -67,9 +74,6 @@
          (port-from-xi (cadr xi-setup))
          (port-to-xi (cddr xi-setup))
          (listener (car xi-setup)))
-
-    (set-current-error-port (open "logs/xile-err.log" (logior O_CREAT O_WRONLY)))
-    (set-current-output-port (open "logs/xile-out.log" (logior O_CREAT O_WRONLY)))
 
     ;; (define stdscr (initscr))
     ;; (raw!)
