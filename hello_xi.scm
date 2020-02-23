@@ -54,8 +54,8 @@
         (cons from-xi to-xi)))))
 
 (define (xile-listener-thread handler-proc port)
-  (parameterize ((current-output-port (open "logs/xile-out.log" (logior O_CREAT O_WRONLY)))
-                 (current-error-port (open "logs/xile-err.log" (logior O_CREAT O_WRONLY))))
+  (parameterize ((current-output-port (open "logs/xile-listen-out.log" (logior O_APPEND O_CREAT O_WRONLY)))
+                 (current-error-port (open "logs/xile-listen-err.log" (logior O_APPEND O_CREAT O_WRONLY))))
     (make-thread handler-proc port)
     )
   )
@@ -74,6 +74,9 @@
          (port-from-xi (cadr xi-setup))
          (port-to-xi (cddr xi-setup))
          (listener (car xi-setup)))
+
+    (set-current-error-port (open "logs/xile-err.log" (logior O_APPEND O_CREAT O_WRONLY)))
+    (set-current-output-port (open "logs/xile-out.log" (logior O_APPEND O_CREAT O_WRONLY)))
 
     ;; (define stdscr (initscr))
     ;; (raw!)
