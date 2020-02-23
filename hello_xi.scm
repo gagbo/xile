@@ -6,7 +6,8 @@
              ;; (ice-9 getopt-long) ;; for CLI options
              (ice-9 suspendable-ports)
              (ice-9 rdelim)
-             (json))
+             (json)
+             (ncurses curses))
 
 
 (install-suspendable-ports!)
@@ -46,24 +47,49 @@
     (setvbuf (cdr xi-pipes) 'line)
     ;; Tried with-output-to-port but it didn't work for some reason
     ;; and sent the output of xi-core process to stdout instead
-    (parameterize ((current-output-port (cdr xi-pipes)))
+    (parameterize ((current-output-port (cdr xi-pipes))
+                   (current-error-port (open "logs/xi-core.log" (logior O_CREAT O_WRONLY))))
       (let ((from-xi (car xi-pipes))
             (to-xi (open-output-pipe path)))
         (cons from-xi to-xi)))))
 
-;; Main
-(define (main args)
+(define (xile-setup)
   (let* ((xi-proc (xile--open "xi-editor/rust/target/release/xi-core"))
          (port-from-xi (car xi-proc))
          (port-to-xi (cdr xi-proc))
          (init-client (xile--msg-init '()))
          (listener (make-thread xile--msg-handler port-from-xi)))
+    (cons listener (cons port-from-xi port-to-xi))))
+
+;; Main
+(define (main args)
+  (let* ((xi-setup (xile-setup))
+         (port-from-xi (cadr xi-setup))
+         (port-to-xi (cddr xi-setup))
+         (listener (car xi-setup)))
+
+    (set-current-error-port (open "logs/xile-err.log" (logior O_CREAT O_WRONLY)))
+    (set-current-output-port (open "logs/xile-out.log" (logior O_CREAT O_WRONLY)))
+
+    ;; (define stdscr (initscr))
+    ;; (raw!)
+    ;; (keypad! stdscr #t)
+    ;; (noecho!)
 
     ;; Xi init code
-    (xile--msg-send port-to-xi init-client)
+    (xile--msg-send port-to-xi (xile--msg-init '()))
 
+    ;; (addstr stdscr "Type any character to see it in bold\n")
+    ;; (let ((ch (getch stdscr)))
+    ;;   (addstr stdscr "The pressed key is ")
+    ;;   (if (char? ch)
+    ;;       (addch stdscr (bold ch))
+    ;;       (addchstr stdscr (bold (keyname ch))))
+
+    ;;   (refresh stdscr)
+    ;;   (getch stdscr)
+    ;;   (endwin))
     ;; TODO : event loop thread instead of joining
-    (join-thread listener (+ 2 (current-time)))
-
+    (join-thread listener (+ 1 (current-time)))
     (close-port port-to-xi)
     (close-port port-from-xi)))
