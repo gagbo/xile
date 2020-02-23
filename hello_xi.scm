@@ -53,7 +53,7 @@
 
 ;; Main
 (define (main args)
-  (let* ((xi-proc (xile--open "xi-core"))
+  (let* ((xi-proc (xile--open "xi-editor/rust/target/release/xi-core"))
          (port-from-xi (car xi-proc))
          (port-to-xi (cdr xi-proc))
          (init-client (xile--msg-init '()))
