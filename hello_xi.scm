@@ -31,7 +31,7 @@
 
 ;; TODO : namespace should be a string or a symbol
 (define (xile--msg-namespace-generic namespace method param-list)
-  (xile--msg-generic namespace `((method . ,method) ,param-list)))
+  (xile--msg-generic namespace (acons 'method method param-list)))
 
 ;; client_started {"config_dir" "some/path"?, "client_extras_dir": "some/other/path"?}
 ;;
@@ -41,7 +41,7 @@
 ;; and the client_extras_dir points to a directory where the frontend can package
 ;; additional resources, such as bundled plugins.
 (define (xile--msg-init param-list)
-  (xile--notif-generic "client_started" param-list))
+  (xile--notif-generic 'client_started param-list))
 
 ;; new_view { "file_path": "path.md"? } -> "view-id-1"
 ;;
@@ -53,34 +53,34 @@
 ;; Thus, exposing the protocol to any other agent than a front-end in direct control
 ;; should be done with extreme caution.
 (define (xile--msg-new_view param-list)
-  (xile--msg-generic "new_view" param-list))
+  (xile--msg-generic 'new_view param-list))
 
 ;; close_view {"view_id": "view-id-1"}
 ;;
 ;; Closes the view associated with this view_id.
 (define (xile--msg-close_view param-list)
-  (xile--msg-generic "close_view" param-list))
+  (xile--msg-generic 'close_view param-list))
 
 ;; save {"view_id": "view-id-4", "file_path": "save.txt"}
 ;;
 ;; Saves the buffer associated with view_id to file_path.
 ;; See the note for new_view. Errors are not currently reported.
 (define (xile--msg-save param-list)
-  (xile--msg-generic "save" param-list))
+  (xile--msg-generic 'save param-list))
 
 ;; set_theme {"theme_name": "InspiredGitHub"}
 ;;
 ;; Asks core to change the theme. If the change succeeds the client will receive
 ;; a theme_changed notification.
 (define (xile--msg-set_theme param-list)
-  (xile--msg-generic "set_theme" param-list))
+  (xile--msg-generic 'set_theme param-list))
 
 ;; set_language {"view-id":"view-id-1", "language_id":"Rust"}
 ;;
 ;; Asks core to change the language of the buffer associated with the view_id.
 ;; If the change succeeds the client will receive a language_changed notification.
 (define (xile--msg-set_language param-list)
-  (xile--msg-generic "set_language" param-list))
+  (xile--msg-generic 'set_language param-list))
 
 ;; modify_user_config { "domain": Domain, "changes": Object }
 ;;
@@ -90,20 +90,20 @@
 ;; where "rust" is any valid syntax identifier, and "view-id-1" is
 ;; the identifier of any open view.
 (define (xile--msg-modify_user_config param-list)
-  (xile--msg-generic "modify_user_config" param-list))
+  (xile--msg-generic 'modify_user_config param-list))
 
 ;; get_config {"view_id": "view-id-1"} -> Object
 ;;
 ;; Returns the config table for the view associated with this view_id.
 (define (xile--msg-get_config param-list)
-  (xile--msg-generic "get_config" param-list))
+  (xile--msg-generic 'get_config param-list))
 
 ;; edit {"method": "insert", "params": {"chars": "A"}, "view_id": "view-id-4"}
 ;;
 ;; Dispatches the inner method to the per-tab handler,
 ;; with individual inner methods described below:
 (define (xile--msg-edit-generic method view_id param-list)
-  (xile--msg-namespace-generic 'edit method `((view_id . ,view_id) ,param-list)))
+  (xile--msg-namespace-generic 'edit method `((view_id . ,view_id) (params . ,param-list))))
 
 ;; insert {"chars":"A"}
 ;;
@@ -367,7 +367,7 @@
 ;; plugin {"method": "start", params: {"view_id": "view-id-1", plugin_name:
 ;; "syntect"}}
 (define (xile--msg-plugin-generic method view_id param-list)
-  (xile--msg-namespace-generic 'plugin method `((view_id . ,view_id) ,param-list)))
+  (xile--msg-namespace-generic 'plugin method (acons 'view_id view_id param-list)))
 
 ;; Starts the named plugin for the given view.
 (define (xile--msg-plugin-start view_id plugin_name)
@@ -541,6 +541,7 @@
 
     ;; Xi init code
     (xile--msg-send port-to-xi (xile--msg-init '()))
+    (xile--msg-send port-to-xi (xile--msg-edit-move_right "view_test"))
 
     ;; (addstr stdscr "Type any character to see it in bold\n")
     ;; (let ((ch (getch stdscr)))
