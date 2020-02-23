@@ -3,9 +3,15 @@
 Let's find out if Guile goes with everything ; and make a front-end for Xi
 Editor using GNU Guile and libraries.
 
+* Table of Contents :TOC_3:noexport:
+- [[#dependencies][Dependencies]]
+- [[#objectives][Objectives]]
+- [[#test-directory]["Test" directory]]
+
 * Dependencies
 
-I target Guile 3.0 with this little endeavour
+I target Guile 3.0 with this little endeavour. The [[./guix_deps][Guix Deps]] directory contains
+package definitions for the dependencies which are not yet in guix packages.
 
 * Objectives
 
@@ -13,3 +19,7 @@ I target Guile 3.0 with this little endeavour
 - Play with SDL2 a little bit
 - See how difficult it is to build software with a json interface to a provider
   (here we are using [[https://github.com/xi-editor/xi-editor][Xi Editor]] as the core text editor)
+
+* "Test" directory
+This [[./test][Test directory]] does not contain tests. It currently acts as an archive for my
+playground to test some files.
