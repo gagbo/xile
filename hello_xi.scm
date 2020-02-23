@@ -19,8 +19,8 @@
   (xile--debug "INFO" message))
 
 ;; Xile protocol messages serialization / sending
-(define (xile--msg-init)
-  (scm->json-string '((method . "client_started") (params))))
+(define (xile--msg-init param-list)
+  (scm->json-string `((method . "client_started") (params . ,param-list))))
 
 (define (xile--msg-send port message)
   (xile--debug-info (string-append "Sending : " message))
@@ -45,7 +45,7 @@
     (setvbuf (car xi-pipes) 'line)
     (setvbuf (cdr xi-pipes) 'line)
     ;; Tried with-output-to-port but it didn't work for some reason
-    ;; and sent the output of xi-core process to stdout
+    ;; and sent the output of xi-core process to stdout instead
     (parameterize ((current-output-port (cdr xi-pipes)))
       (let ((from-xi (car xi-pipes))
             (to-xi (open-output-pipe path)))
@@ -56,7 +56,7 @@
   (let* ((xi-proc (xile--open "xi-core"))
          (port-from-xi (car xi-proc))
          (port-to-xi (cdr xi-proc))
-         (init-client (xile--msg-init))
+         (init-client (xile--msg-init '()))
          (listener (make-thread xile--msg-handler port-from-xi)))
 
     ;; Xi init code
