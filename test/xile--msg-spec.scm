@@ -2,7 +2,7 @@
 !#
 
 (load "check.scm")
-(load "hello_xi.scm")
+(load "../hello_xi.scm")
 
 (use-modules (check))
 
