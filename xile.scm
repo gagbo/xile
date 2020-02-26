@@ -20,18 +20,16 @@
   (xile--debug "INFO" message))
 
 ;; Actual sending of the message
-(define (xile--msg-send port message)
-  (xile--debug-info (string-append "Sending : " message))
-  (write-line message port))
+;; Defined in the (let ((id)) ) binding
+(define xile--msg-send #f)
+;; Here the message is parsed JSON. To assert
+;; Defined in the (let ((id)) ) binding
+(define xile--msg-dispatch #f)
 
 ;; Xile protocol messages deserialization / receiving
 (define (xile--msg-read port)
   (xile--debug-info "waiting for one line")
   (xile--msg-dispatch (json->scm port)))
-
-;; Here the message is parsed JSON. To assert
-(define (xile--msg-dispatch message)
-  (write-line message (current-error-port)))
 
 (define (xile--msg-handler port)
   (while (not (port-closed? port))
@@ -71,7 +69,16 @@
   (cons #f (scm->json-string `((method . ,method) (params . ,param-list)))))
 
 (define xile--msg-generic #f)
+;; TODO : Add a (id -> procedure) map to the let-binding to register/fetch callbacks
 (let ((id 0))
+  (set! xile--msg-send (lambda (port message)
+                         (xile--debug-info (string-append "Sending : " (cdr message)))
+                         ;; TODO Add the callback
+                         (write-line message port)))
+
+  (set! xile--msg-dispatch (lambda (message)
+                             (write-line message (current-error-port))))
+
   (set! xile--msg-generic (lambda (method param-list)
                            (set! id (1+ id))
                            (cons id (scm->json-string `((id . ,id) (method . ,method) (params . ,param-list)))))))
