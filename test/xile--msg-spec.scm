@@ -12,8 +12,8 @@
 ;; TODO : check expected values of the test
 (check (xile--msg-new_view '((file_path . "test_path/xile.scm"))) => "{\"id\":0,\"method\":\"new_view\",\"params\":{\"file_path\":\"test_path/xile.scm\"}}" )
 
-(check (xile--msg-plugin-start "test_view" "syntect") => "{\"id\":0,\"method\":\"plugin\",\"params\":{\"method\":\"start\", \"params\":{\"view_id\":\"test_view\",\"plugin_name\":\"syntect\"}}}}")
+(check (xile--msg-plugin-start "test_view" "syntect") => "{\"id\":0,\"method\":\"plugin\",\"params\":{\"method\":\"start\",\"params\":{\"view_id\":\"test_view\",\"plugin_name\":\"syntect\"}}}")
 
-(check (xile--msg-edit-insert "test_view" '()) => "{\"id\":0,\"method\":\"edit\",\"params\":{\"view_id\":\"test_view\",\"method\":\"insert\", \"params\":{}}}}")
-(check (xile--msg-edit-paste "test_view" '((chars . "password"))) => "{\"id\":0,\"method\":\"edit\",\"params\":{\"view_id\":\"test_view\",\"method\":\"insert\", \"params\":{}}}}")
-(check (xile--msg-edit-move_right "test_view") => "{\"id\":0,\"method\":\"edit\",\"params\":{\"view_id\":\"test_view\",\"method\":\"move_right\"}}")
+(check (xile--msg-edit-insert "test_view" '()) => "{\"id\":0,\"method\":\"edit\",\"params\":{\"method\":\"insert\",\"view_id\":\"test_view\",\"params\":{}}}")
+(check (xile--msg-edit-paste "test_view" '((chars . "password"))) => "{\"id\":0,\"method\":\"edit\",\"params\":{\"method\":\"paste\",\"view_id\":\"test_view\",\"params\":{\"chars\":\"password\"}}}")
+(check (xile--msg-edit-move_right "test_view") => "{\"id\":0,\"method\":\"edit\",\"params\":{\"method\":\"move_right\",\"view_id\":\"test_view\",\"params\":{}}}")

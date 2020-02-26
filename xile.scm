@@ -367,7 +367,7 @@
 ;; plugin {"method": "start", params: {"view_id": "view-id-1", plugin_name:
 ;; "syntect"}}
 (define (xile--msg-plugin-generic method view_id param-list)
-  (xile--msg-namespace-generic 'plugin method (acons 'view_id view_id param-list)))
+  (xile--msg-namespace-generic 'plugin method `((params . ,(acons 'view_id view_id param-list)))))
 
 ;; Starts the named plugin for the given view.
 (define (xile--msg-plugin-start view_id plugin_name)
