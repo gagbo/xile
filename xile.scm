@@ -19,15 +19,62 @@
 (define (xile--debug-info message)
   (xile--debug "INFO" message))
 
+;; Actual sending of the message
+(define (xile--msg-send port message)
+  (xile--debug-info (string-append "Sending : " message))
+  (write-line message port))
+
+;; Xile protocol messages deserialization / receiving
+(define (xile--msg-read port)
+  (xile--debug-info "waiting for one line")
+  (xile--msg-dispatch (json->scm port)))
+
+;; Here the message is parsed JSON. To assert
+(define (xile--msg-dispatch message)
+  (write-line message (current-error-port)))
+
+(define (xile--msg-handler port)
+  (while (not (port-closed? port))
+    (xile--msg-read port)))
+
+;; Socket opening function
+(define (xile--open path)
+  (let* ((xi-pipes (pipe)))
+    (setvbuf (car xi-pipes) 'line)
+    (setvbuf (cdr xi-pipes) 'line)
+    ;; Tried with-output-to-port but it didn't work for some reason
+    ;; and sent the output of xi-core process to stdout instead
+    (parameterize ((current-output-port (cdr xi-pipes))
+                   (current-error-port (open "logs/xi-core.log" (logior O_CREAT O_WRONLY))))
+      (let ((from-xi (car xi-pipes))
+            (to-xi (open-output-pipe path)))
+        (cons from-xi to-xi)))))
+
+(define (xile-listener-thread handler-proc port)
+  (parameterize ((current-output-port (open "logs/xile-listen-out.log" (logior O_APPEND O_CREAT O_WRONLY)))
+                 (current-error-port (open "logs/xile-listen-err.log" (logior O_APPEND O_CREAT O_WRONLY))))
+    (make-thread handler-proc port)
+    )
+  )
+
+(define (xile-setup)
+  (let* ((xi-proc (xile--open "xi-editor/rust/target/release/xi-core"))
+         (port-from-xi (car xi-proc))
+         (port-to-xi (cdr xi-proc))
+         (init-client (xile--msg-init '()))
+         (listener (xile-listener-thread xile--msg-handler port-from-xi)))
+    (cons listener (cons port-from-xi port-to-xi))))
+
 ;; Xile protocol messages serialization / sending
-;; TODO : share the id for all sent messages and return it
 ;; TODO : use optional params to fill the message as necessary
 (define (xile--notif-generic method param-list)
-  (scm->json-string `((method . ,method) (params . ,param-list))))
+  (cons #f (scm->json-string `((method . ,method) (params . ,param-list)))))
 
-(define (xile--msg-generic method param-list)
-  (let ((id 0))
-    (scm->json-string `((id . ,id) (method . ,method) (params . ,param-list)))))
+(define xile--msg-generic #f)
+(let ((id 0))
+  (set! xile--msg-generic (lambda (method param-list)
+                           (set! id (1+ id))
+                           (cons id (scm->json-string `((id . ,id) (method . ,method) (params . ,param-list)))))))
 
 ;; TODO : namespace should be a string or a symbol
 (define (xile--msg-namespace-generic namespace method param-list)
@@ -477,52 +524,6 @@
 ;; Splits all current selections into lines.
 (define (xile--msg-plugin-selection_into_lines view_id)
   (xile--msg-plugin-generic 'selection_into_lines view_id '()))
-
-;; Actual sending of the message
-(define (xile--msg-send port message)
-  (xile--debug-info (string-append "Sending : " message))
-  (write-line message port))
-
-;; Xile protocol messages deserialization / receiving
-(define (xile--msg-read port)
-  (xile--debug-info "waiting for one line")
-  (xile--msg-dispatch (json->scm port)))
-
-;; Here the message is parsed JSON. To assert
-(define (xile--msg-dispatch message)
-  (write-line message (current-error-port)))
-
-(define (xile--msg-handler port)
-  (while (not (port-closed? port))
-    (xile--msg-read port)))
-
-;; Socket opening function
-(define (xile--open path)
-  (let* ((xi-pipes (pipe)))
-    (setvbuf (car xi-pipes) 'line)
-    (setvbuf (cdr xi-pipes) 'line)
-    ;; Tried with-output-to-port but it didn't work for some reason
-    ;; and sent the output of xi-core process to stdout instead
-    (parameterize ((current-output-port (cdr xi-pipes))
-                   (current-error-port (open "logs/xi-core.log" (logior O_CREAT O_WRONLY))))
-      (let ((from-xi (car xi-pipes))
-            (to-xi (open-output-pipe path)))
-        (cons from-xi to-xi)))))
-
-(define (xile-listener-thread handler-proc port)
-  (parameterize ((current-output-port (open "logs/xile-listen-out.log" (logior O_APPEND O_CREAT O_WRONLY)))
-                 (current-error-port (open "logs/xile-listen-err.log" (logior O_APPEND O_CREAT O_WRONLY))))
-    (make-thread handler-proc port)
-    )
-  )
-
-(define (xile-setup)
-  (let* ((xi-proc (xile--open "xi-editor/rust/target/release/xi-core"))
-         (port-from-xi (car xi-proc))
-         (port-to-xi (cdr xi-proc))
-         (init-client (xile--msg-init '()))
-         (listener (xile-listener-thread xile--msg-handler port-from-xi)))
-    (cons listener (cons port-from-xi port-to-xi))))
 
 ;; Main
 (define (main args)
