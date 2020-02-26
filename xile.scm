@@ -72,9 +72,12 @@
 ;; TODO : Add a (id -> procedure) map to the let-binding to register/fetch callbacks
 (let ((id 0))
   (set! xile--msg-send (lambda (port message)
-                         (xile--debug-info (string-append "Sending : " (cdr message)))
-                         ;; TODO Add the callback
-                         (write-line message port)))
+                         (let ((actual-message (cdr message))
+                               (id (car message)))
+                           (xile--debug-info (string-append "Sending : " actual-message))
+                           ;; TODO Add the callback
+                           (write-line actual-message port)
+                           id)))
 
   (set! xile--msg-dispatch (lambda (message)
                              (write-line message (current-error-port))))
