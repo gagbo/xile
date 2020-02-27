@@ -76,11 +76,13 @@
                          (let ((actual-message (cdr message))
                                (id (car message)))
                            (xile--debug-info (string-append "Sending : " actual-message))
-                           ;; TODO Add the callback
+                           ;; TODO Add the callback (see msg-new_view for example of received data)
                            (write-line actual-message port)
                            id)))
 
   (set! xile--msg-dispatch (lambda (message)
+                             ;; Example of notification :
+                             ;; ((params (view_id . view-id-1) (line . 0) (col . 0)) (method . scroll_to))
                              (write-line message (current-error-port))))
 
   (set! xile--msg-generic (lambda (method param-list)
@@ -110,6 +112,8 @@
 ;; the protocol delegates power to load and save arbitrary files.
 ;; Thus, exposing the protocol to any other agent than a front-end in direct control
 ;; should be done with extreme caution.
+;;
+;; Response from manual testing : ((result . view-id-1) (id . 1))
 (define (xile--msg-new_view param-list)
   (xile--msg-generic 'new_view param-list))
 
