@@ -552,7 +552,7 @@
 
     ;; Xi init code
     (xile--msg-send port-to-xi (xile--msg-init '()))
-    (xile--msg-send port-to-xi (xile--msg-edit-move_right "view_test"))
+    (xile--msg-send port-to-xi (xile--msg-new_view '((file_path . "README.org"))))
 
     ;; (addstr stdscr "Type any character to see it in bold\n")
     ;; (let ((ch (getch stdscr)))
@@ -565,6 +565,6 @@
     ;;   (getch stdscr)
     ;;   (endwin))
     ;; TODO : event loop thread instead of joining
-    (join-thread listener (+ 1 (current-time)))
+    (join-thread listener (+ 2 (current-time)))
     (close-port port-to-xi)
     (close-port port-from-xi)))
