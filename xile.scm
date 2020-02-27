@@ -71,6 +71,15 @@
 (define xile--msg-generic #f)
 ;; TODO : Add a (id -> procedure) map to the let-binding to register/fetch callbacks
 (let ((id 0)
+      ;; TODO : Check https://www.gnu.org/software/guile/manual/html_node/Callback-Closure.html#Callback-Closure
+      ;; for design ideas.
+      ;; It would be cleaner to use this design. xile--msg-send only sends the message through
+      ;; the port. So it would be possible to use the xile--msg-generic and xile--msg-dispatch
+      ;; methods to build a context we would pass as the argument of the make-handler
+      ;; procedure in the given example. This would allow our dispatcher code to only
+      ;; call the procedure returned by make-handler if the id matches (this would be
+      ;; done filling the (id-to-callback) hash table in the body of register-callback
+      ;; procdure.)
       (id-to-callback (make-hash-table 31)))
   (set! xile--msg-send (lambda (port message)
                          (let ((actual-message (cdr message))
