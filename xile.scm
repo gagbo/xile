@@ -70,7 +70,8 @@
 
 (define xile--msg-generic #f)
 ;; TODO : Add a (id -> procedure) map to the let-binding to register/fetch callbacks
-(let ((id 0))
+(let ((id 0)
+      (id-to-callback (make-hash-table 31)))
   (set! xile--msg-send (lambda (port message)
                          (let ((actual-message (cdr message))
                                (id (car message)))
