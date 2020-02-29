@@ -69,6 +69,7 @@
   (cons #f (scm->json-string `((method . ,method) (params . ,param-list)))))
 
 (define xile--msg-generic #f)
+(define xile--register-callback #f)
 ;; TODO : Add a (id -> procedure) map to the let-binding to register/fetch callbacks
 (let ((id 0)
       ;; TODO : Check https://www.gnu.org/software/guile/manual/html_node/Callback-Closure.html#Callback-Closure
@@ -80,7 +81,9 @@
       ;; call the procedure returned by make-handler if the id matches (this would be
       ;; done filling the (id-to-callback) hash table in the body of register-callback
       ;; procdure.)
-      (id-to-callback (make-hash-table 31)))
+      (id-to-callback (make-hash-table 31))
+      (notification-to-callback (make-hash-table 31)))
+
   (set! xile--msg-send (lambda (port message)
                          (let ((actual-message (cdr message))
                                (id (car message)))
@@ -89,14 +92,43 @@
                            (write-line actual-message port)
                            id)))
 
+;; Message type is either :
+;; - a number matching the id and expecting a result in the alist
+;; - a symbol matching the method key in a notification from back-end to front-end
+  (set! xile--register-callback (lambda (message-type handler-proc)
+                                  (cond ((number? message-type)
+                                         (begin
+                                           (write-line "Handling message with id")
+                                           (hashq-set! id-to-callback message-type handler-proc)))
+                                        ((symbol? message-type)
+                                         (begin
+                                           (write-line "Handling notification")
+                                           (hashq-set! notification-to-callback message-type handler-proc)))
+                                        (#t (error "Not a valid message-type")))))
+
+
   (set! xile--msg-dispatch (lambda (message)
                              ;; Example of notification :
                              ;; ((params (view_id . view-id-1) (line . 0) (col . 0)) (method . scroll_to))
-                             (write-line message (current-error-port))))
+                             (write-line message (current-error-port))
+                             (let ((message-id (assoc-ref message "id"))
+                                   (message-result (assoc-ref message "result"))
+                                   (notif-method (assoc-ref message "method"))
+                                   (notif-params (assoc-ref message "params")))
+                               (cond (message-id
+                                      (if (hashq-get-handle id-to-callback message-id)
+                                          (apply (hashq-ref id-to-callback message-id) (list message-result))
+                                          (write-line "INFO Missing callback for this id" (current-error-port))))
+                                     (notif-method
+                                      (if (hashq-get-handle notification-to-callback notif-method)
+                                          (apply (hashq-ref notification-to-callback notif-method)
+                                                 (list notif-params))
+                                          (write-line "INFO No callback for this method" (current-error-port))))
+                                     (#t (write-line "This message is weird :(") (current-error-port))))))
 
   (set! xile--msg-generic (lambda (method param-list)
-                           (set! id (1+ id))
-                           (cons id (scm->json-string `((id . ,id) (method . ,method) (params . ,param-list)))))))
+                            (set! id (1+ id))
+                            (cons id (scm->json-string `((id . ,id) (method . ,method) (params . ,param-list)))))))
 
 ;; TODO : namespace should be a string or a symbol
 (define (xile--msg-namespace-generic namespace method param-list)
@@ -566,7 +598,9 @@
 
     ;; Xi init code
     (xile--msg-send port-to-xi (xile--msg-init '()))
-    (xile--msg-send port-to-xi (xile--msg-new_view '((file_path . "README.org"))))
+    (let ((msg (xile--msg-new_view '((file_path . "README.org")))))
+      (xile--register-callback (car msg) (lambda (result) (write-line result (current-output-port))))
+      (xile--msg-send port-to-xi msg))
 
     ;; (addstr stdscr "Type any character to see it in bold\n")
     ;; (let ((ch (getch stdscr)))
