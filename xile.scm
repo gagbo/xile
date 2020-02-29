@@ -3,6 +3,7 @@
 ;; coding: utf-8
 (use-modules (ice-9 popen)
              (ice-9 threads)
+             (ice-9 format)
              ;; (ice-9 getopt-long) ;; for CLI options
              (ice-9 suspendable-ports)
              (ice-9 rdelim)
@@ -14,7 +15,7 @@
 
 ;; Debugging / Logging
 (define (xile--debug severity message)
-  (write-line (string-append severity ": "  message) (current-error-port)))
+  (format (current-error-port) "[~a] ~a: ~a~%" (strftime "%F %T" (localtime (current-time))) severity message))
 
 (define (xile--debug-info message)
   (xile--debug "INFO" message))
@@ -98,11 +99,11 @@
   (set! xile--register-callback (lambda (message-type handler-proc)
                                   (cond ((number? message-type)
                                          (begin
-                                           (write-line "Handling message with id")
+                                           (format (current-error-port) "Adding callback for message id ~d~%" message-type)
                                            (hashq-set! id-to-callback message-type handler-proc)))
                                         ((symbol? message-type)
                                          (begin
-                                           (write-line "Handling notification")
+                                           (format (current-error-port) "Adding callback for notification ~a~%" message-type)
                                            (hashq-set! notification-to-callback message-type handler-proc)))
                                         (#t (error "Not a valid message-type")))))
 
@@ -110,7 +111,10 @@
   (set! xile--msg-dispatch (lambda (message)
                              ;; Example of notification :
                              ;; ((params (view_id . view-id-1) (line . 0) (col . 0)) (method . scroll_to))
-                             (write-line message (current-error-port))
+                             (format (current-error-port) "Just received message : ~%~
+                                                           ----------------------------~%~
+                                                           ~y~
+                                                           ----------------------------~%" message)
                              (let ((message-id (assoc-ref message "id"))
                                    (message-result (assoc-ref message "result"))
                                    (notif-method (assoc-ref message "method"))
@@ -118,13 +122,14 @@
                                (cond (message-id
                                       (if (hashq-get-handle id-to-callback message-id)
                                           (apply (hashq-ref id-to-callback message-id) (list message-result))
-                                          (write-line "INFO Missing callback for this id" (current-error-port))))
+                                          (format (current-error-port) "INFO: Missing callback for id ~d~%" message-id)))
                                      (notif-method
                                       (if (hashq-get-handle notification-to-callback notif-method)
                                           (apply (hashq-ref notification-to-callback notif-method)
                                                  (list notif-params))
-                                          (write-line "INFO No callback for this method" (current-error-port))))
-                                     (#t (write-line "This message is weird :(") (current-error-port))))))
+                                          (format (current-error-port) "INFO: Missing callback for method ~a~%" notif-method)))
+                                     (#t
+                                      (format (current-error-port) "This message is unsupported : ~y~%" message))))))
 
   (set! xile--msg-generic (lambda (method param-list)
                             (set! id (1+ id))
@@ -599,7 +604,12 @@
     ;; Xi init code
     (xile--msg-send port-to-xi (xile--msg-init '()))
     (let ((msg (xile--msg-new_view '((file_path . "README.org")))))
-      (xile--register-callback (car msg) (lambda (result) (write-line result (current-output-port))))
+      (xile--register-callback
+       (car msg)
+       (lambda (result)
+         (format #t "Got ~a for the new_view message ~
+                     -> Now I'd like to put the value back into ~
+                        a parent environment binding~%" result)))
       (xile--msg-send port-to-xi msg))
 
     ;; (addstr stdscr "Type any character to see it in bold\n")
