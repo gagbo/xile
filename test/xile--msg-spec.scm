@@ -1,6 +1,8 @@
 #!/usr/bin/env -S guile --no-auto-compile -s
 !#
 
+;; Example took from https://git.savannah.nongnu.org/cgit/emacsy.git/tree/test
+
 (load "check.scm")
 (load "../xile.scm")
 
