@@ -4,10 +4,11 @@
 ;; Example took from https://git.savannah.nongnu.org/cgit/emacsy.git/tree/test
 
 (load "check.scm")
-(load "../xile.scm")
+(load "../xile/message.scm")
 
 (use-modules (check)
-             (ice-9 pretty-print))
+             (ice-9 pretty-print)
+             (xile message))
 (define test-errors '())
 
 ;;; xile : Messages Tests
