@@ -12,15 +12,17 @@
   (let* ((xi-setup (xile-setup))
          (port-from-xi (cadr xi-setup))
          (port-to-xi (cddr xi-setup))
-         (listener (car xi-setup)))
+         (listener (car xi-setup))
+         (stdscr (initscr)))
 
+    ;; Window init code
+    (raw!)
+    (keypad! stdscr #t)
+    (noecho!)
+
+    ;; Logging init code
     (set-current-error-port (open "logs/xile-err.log" (logior O_APPEND O_CREAT O_WRONLY)))
     (set-current-output-port (open "logs/xile-out.log" (logior O_APPEND O_CREAT O_WRONLY)))
-
-    ;; (define stdscr (initscr))
-    ;; (raw!)
-    ;; (keypad! stdscr #t)
-    ;; (noecho!)
 
     ;; Xi init code
     (xile-rpc-send port-to-xi (xile-msg-init '()))
@@ -40,10 +42,11 @@
     ;;       (addch stdscr (bold ch))
     ;;       (addchstr stdscr (bold (keyname ch))))
 
-    ;;   (refresh stdscr)
-    ;;   (getch stdscr)
-    ;;   (endwin))
+      (refresh stdscr)
+      (getch stdscr)
+
     ;; TODO : event loop thread instead of joining
-    (join-thread listener (+ 2 (current-time)))
+    (join-thread listener (current-time))
     (close-port port-to-xi)
-    (close-port port-from-xi)))
+    (close-port port-from-xi)
+    (endwin)))
