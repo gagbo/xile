@@ -84,6 +84,8 @@
         ;; HACK register notification callback
         (xile-register-callback
          'update
+         ;; The "update" callback here is just badly extracting the text
+         ;; from the first line of updates.
          (lambda (result)
            (addstr xile-main
                    (format #f "~a" (assoc-ref (vector-ref (assoc-ref (vector-ref (assoc-ref (assoc-ref result "update") "ops") 0) "lines") 0) "text"))
@@ -128,25 +130,19 @@
           (xile-register-callback
            (car msg)
            (lambda (result)
-             ;; The output-port for this lambda is the xile-listen-err file-port
-             ;; (addstr xile-main
-             ;;         (format #f "Got ~a for the new_view message ~%~
-             ;;           -> Now I'd like to put the value back into ~
-             ;;              a parent environment binding~%" result)
-             ;;         #:y 10 #:x 0)
+             ;; TODO : Make a real structure around xile-main to hold some state
+             ;;
+             ;; I want to go with the one window = one view pattern
+             ;; (eventually using panels to superimpose different views between the header and the footer)
+             ;; Therefore, the xile-main window needs to be associated with the "view_id" returned somehow
+             ;;
+             ;; An application level (view_id: symbol -> Panel/window struct) hash map will be implemented.
+             ;; This map will have :
+             ;; - some writes in this callback, and
+             ;; - some reads in basically all back_end notifications callbacks
              (refresh xile-main)))
           (xile-rpc-send port-to-xi msg)))
 
-      ;; HACK Basic xile-main code
-      ;; (attr-set! xile-main A_NORMAL)
-      ;; (addstr xile-main "Type any character to see it in bold" #:y 8 #:x 30)
-      ;; (refresh xile-main)
-      ;; (let ((ch (getch xile-main)))
-      ;;   (addstr xile-main "The pressed key is " #:y 9 #:x 30)
-      ;;   (if (char? ch)
-      ;;       (addch xile-main (bold ch))
-      ;;       (addchstr xile-main (bold (keyname ch))))
-      ;;   (refresh xile-main))
 
       ;; TODO : event loop thread instead of exiting just after this
       (getch xile-main))
