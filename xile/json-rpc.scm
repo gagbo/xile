@@ -16,6 +16,11 @@
 (install-suspendable-ports!)
 
 (define (xile-setup)
+  "Setup Xi process with pipes and listener thread.
+Return a list :
+- car : listener thread
+- cdar : input-port with communication from Xi process
+- cddar : output-port with communication to Xi process"
   (let* ((xi-proc (xile-open "xi-editor/rust/target/release/xi-core"))
          (port-from-xi (car xi-proc))
          (port-to-xi (cdr xi-proc))
@@ -24,9 +29,11 @@
 
 ;; Debugging / Logging
 (define (xile-debug severity message)
+  "Add MESSAGE with given SEVERITY to the current-error-port"
   (format (current-error-port) "[~a] ~a: ~a~%" (strftime "%F %T" (localtime (current-time))) severity message))
 
 (define (xile-debug-info message)
+  "Add MESSAGE with info severity to the current-error-port"
   (xile-debug "INFO" message))
 
 ;; Actual sending of the message
@@ -40,15 +47,19 @@
 
 ;; Xile protocol messages deserialization / receiving
 (define (xile-rpc-read port)
+  "Consume messages from PORT, parse them, and send them to xile-rpc-dispatch function"
   (xile-debug-info "waiting for one line")
   (xile-rpc-dispatch (json->scm port)))
 
 (define (xile-rpc-handler port)
+  "Entry point of listening to Xi JSON-RPC messages from input-port PORT"
   (while (not (port-closed? port))
     (xile-rpc-read port)))
 
 ;; Socket opening function
 (define (xile-open path)
+  "Open a Xi process using PATH to xi-core executable.
+Return a pair (input-port . output-port) for pipe communication with xi-core process."
   (let* ((xi-pipes (pipe)))
     (setvbuf (car xi-pipes) 'line)
     (setvbuf (cdr xi-pipes) 'line)
@@ -61,43 +72,49 @@
         (cons from-xi to-xi)))))
 
 (define (xile-listener-thread handler-proc port)
+  "Return a thread calling HANDLER-PROC on a given PORT"
   (parameterize ((current-output-port (open "logs/xile-listen-out.log" (logior O_APPEND O_CREAT O_WRONLY)))
                  (current-error-port (open "logs/xile-listen-err.log" (logior O_APPEND O_CREAT O_WRONLY))))
     (make-thread handler-proc port)
     )
   )
 
-;; TODO : Add a (id -> procedure) map to the let-binding to register/fetch callbacks
+;; HACK : Begin a let-binding to share callback registration and fetching.
 (let (;; https://www.gnu.org/software/guile/manual/html_node/Callback-Closure.html#Callback-Closure
       ;; for design ideas.
       (id-to-callback (make-hash-table 31))
       (notification-to-callback (make-hash-table 31)))
 
   (set! xile-rpc-send (lambda (port message)
-                         (let ((actual-message (cdr message))
-                               (id (car message)))
-                           (xile-debug-info (string-append "Sending : " actual-message))
-                           ;; TODO Potentially add the callback here ?
-                           ;; Add the callback (see msg-new_view for example of received data)
-                           (write-line actual-message port)
-                           id)))
+                        "Send a MESSAGE for Xi process using PORT.
+MESSAGE must be a pair (id . actual-message) to help return value.
+Return the id of the message sent if it was a message, or #f for a notification."
+                        (let ((actual-message (cdr message))
+                              (id (car message)))
+                          (xile-debug-info (string-append "Sending : " actual-message))
+                          (write-line actual-message port)
+                          id)))
 
-  ;; Message type is either :
-  ;; - a number matching the id and expecting a result in the alist
-  ;; - a symbol matching the method key in a notification from back-end to front-end
   (set! xile-register-callback (lambda (message-type handler-proc)
-                                  (cond ((number? message-type)
-                                         (begin
-                                           (format (current-error-port) "Adding callback for message id ~d~%" message-type)
-                                           (hashq-set! id-to-callback message-type handler-proc)))
-                                        ((symbol? message-type)
-                                         (begin
-                                           (format (current-error-port) "Adding callback for notification ~a~%" message-type)
-                                           (hashq-set! notification-to-callback message-type handler-proc)))
-                                        (#t (error "Not a valid message-type")))))
+                                 "Register a new callback to MESSAGE-TYPE.
+Message type is either :
+- a number matching the id and expecting a result in the alist
+  (HANDLER-PROC is called with \"result\" object)
+- a symbol matching the method key in a notification from back-end to front-end
+  (HANDLER-PROC is called with \"params\" object)"
+                                 (cond ((number? message-type)
+                                        (begin
+                                          (format (current-error-port) "Adding callback for message id ~d~%" message-type)
+                                          (hashq-set! id-to-callback message-type handler-proc)))
+                                       ((symbol? message-type)
+                                        (begin
+                                          (format (current-error-port) "Adding callback for notification ~a~%" message-type)
+                                          (hashq-set! notification-to-callback message-type handler-proc)))
+                                       (#t (error "Not a valid message-type")))))
 
 
   (set! xile-rpc-dispatch (lambda (message)
+                            "Dispatch a received MESSAGE to the correct callback."
                              ;; Example of notification :
                              (format (current-error-port) "Just received message : ~%~
                                                            ----------------------------~%~
