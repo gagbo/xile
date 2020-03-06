@@ -143,9 +143,20 @@
              (refresh xile-main)))
           (xile-rpc-send port-to-xi msg)))
 
+      ;; Main event loop
+      (let loop ((ch (getch xile-main)))
+        (cond
+         ((eqv? ch #\q)
+          #f)
 
-      ;; TODO : event loop thread instead of exiting just after this
-      (getch xile-main))
+         (else
+          ;; FIXME : try hitting F-key and then a character key
+          ;; Expected : the line shown has no character after closing parens
+          ;; Actual : residual of the longer string before the char-key
+          ;;          (because F-keys are 3 chars longs in their representation)
+          (addstr xile-footer (format #f "Press q to quit (you pressed ~a)" ch) #:y 1 #:x 0)
+          (refresh xile-footer)
+          (loop (getch xile-main))))))
 
     ;; Closing code (give back resources)
     (join-thread listener (current-time))
