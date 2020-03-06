@@ -105,7 +105,7 @@
                                                            ----------------------------~%" message)
                              (let ((message-id (assoc-ref message "id"))
                                    (message-result (assoc-ref message "result"))
-                                   (notif-method (assoc-ref message "method"))
+                                   (notif-method (if (assoc-ref message "method") (string->symbol (assoc-ref message "method")) #f))
                                    (notif-params (assoc-ref message "params")))
                                (cond (message-id
                                       (if (hashq-get-handle id-to-callback message-id)
@@ -117,5 +117,4 @@
                                                  (list notif-params))
                                           (format (current-error-port) "INFO: Missing callback for method ~a~%" notif-method)))
                                      (#t
-                                      (format (current-error-port) "This message is unsupported : ~y~%" message))))))
-  )
+                                      (format (current-error-port) "This message is unsupported : ~y~%" message)))))))

@@ -77,31 +77,76 @@
       (set-current-error-port (open "logs/xile-err.log" (logior O_APPEND O_CREAT O_WRONLY)))
       (set-current-output-port (open "logs/xile-out.log" (logior O_APPEND O_CREAT O_WRONLY)))
 
-      ;; HACK Xi init code
+      ;; Xi init code
       (xile-rpc-send port-to-xi (xile-msg-init '()))
-      (let ((msg (xile-msg-new_view '((file_path . "README.org")))))
+
+      (begin
+        ;; HACK register notification callback
         (xile-register-callback
-         (car msg)
+         'update
          (lambda (result)
-           ;; The output-port for this lambda is the xile-listen-err file-port
            (addstr xile-main
-                   (format #f "Got ~a for the new_view message ~%~
-                     -> Now I'd like to put the value back into ~
-                        a parent environment binding~%" result)
-                   #:y 10 #:x 0)
+                   (format #f "~a" (assoc-ref (vector-ref (assoc-ref (vector-ref (assoc-ref (assoc-ref result "update") "ops") 0) "lines") 0) "text"))
+                   #:y 0 #:x 0)
            (refresh xile-main)))
-        (xile-rpc-send port-to-xi msg))
+
+        (xile-register-callback
+         'scroll_to
+         (lambda (result)
+           (let ((y (assoc-ref result "line"))
+                 (x (assoc-ref result "col")))
+             (move xile-main y x))
+           (refresh xile-main)))
+
+        (xile-register-callback
+         'language_changed
+         (lambda (result)
+           (format #t "language_changed unimplemented !~%")))
+
+        (xile-register-callback
+         'config_changed
+         (lambda (result)
+           (format #t "config_changed unimplemented !~%")))
+
+        (xile-register-callback
+         'available_themes
+         (lambda (result)
+           (format #t "available_themes unimplemented !~%")))
+
+        (xile-register-callback
+         'available_plugins
+         (lambda (result)
+           (format #t "available_plugins unimplemented !~%")))
+
+        (xile-register-callback
+         'available_languages
+         (lambda (result)
+           (format #t "available_languages unimplemented !~%")))
+
+        ;; HACK open file
+        (let ((msg (xile-msg-new_view '((file_path . "README.org")))))
+          (xile-register-callback
+           (car msg)
+           (lambda (result)
+             ;; The output-port for this lambda is the xile-listen-err file-port
+             ;; (addstr xile-main
+             ;;         (format #f "Got ~a for the new_view message ~%~
+             ;;           -> Now I'd like to put the value back into ~
+             ;;              a parent environment binding~%" result)
+             ;;         #:y 10 #:x 0)
+             (refresh xile-main)))
+          (xile-rpc-send port-to-xi msg)))
 
       ;; HACK Basic xile-main code
-      (attr-set! xile-main A_NORMAL)
-      (addstr xile-main "Type any character to see it in bold" #:y 8 #:x 30)
-      (refresh xile-main)
-      (let ((ch (getch xile-main)))
-        (addstr xile-main "The pressed key is " #:y 9 #:x 30)
-        (if (char? ch)
-            (addch xile-main (bold ch))
-            (addchstr xile-main (bold (keyname ch))))
-        (refresh xile-main))
+      ;; (attr-set! xile-main A_NORMAL)
+      ;; (addstr xile-main "Type any character to see it in bold" #:y 8 #:x 30)
+      ;; (refresh xile-main)
+      ;; (let ((ch (getch xile-main)))
+      ;;   (addstr xile-main "The pressed key is " #:y 9 #:x 30)
+      ;;   (if (char? ch)
+      ;;       (addch xile-main (bold ch))
+      ;;       (addchstr xile-main (bold (keyname ch))))
+      ;;   (refresh xile-main))
 
       ;; TODO : event loop thread instead of exiting just after this
       (getch xile-main))
