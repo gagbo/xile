@@ -25,16 +25,29 @@
          (starty (- (lines) height)))
     ((lambda (win)
        (attr-set! win A_REVERSE)
-       (bkgdset! win (inverse #\sp))
        win)
      (newwin height width starty startx))))
 
 (define (update-header header-win text)
+  ;; TODO Make the refresh optional
       (addstr header-win text #:y 0 #:x 10)
       (refresh header-win))
 
 (define (update-footer footer-win text)
+  ;; TODO Make the refresh optional
+
+  ;; HACK : bkdgset! scope assumes the old value is (normal #\sp) and hardcodes it in the
+  ;; function.
+  ;; It would be better if the value was captured in a let-binding
+  (bkgdset! footer-win (inverse #\sp))
   (addstr footer-win text #:y 0 #:x (round (/ (- (cols) (string-length text)) 2)))
+  (bkgdset! footer-win (normal #\sp))
+  (refresh footer-win))
+
+(define (clear-footer-text footer-win)
+  ;; TODO Make the refresh optional
+  (move footer-win 1 0)
+  (clrtobot footer-win)
   (refresh footer-win))
 
 (define (make-xile-main)
@@ -59,6 +72,8 @@
     (start-color!)
     (keypad! stdscr #t)
     (noecho!)
+    (nonl!)
+    (intrflush! #f)
 
     ;; This let provides an environment with the window handles
     (let ((xile-header (make-xile-header))
@@ -150,10 +165,7 @@
           #f)
 
          (else
-          ;; FIXME : try hitting F-key and then a character key
-          ;; Expected : the line shown has no character after closing parens
-          ;; Actual : residual of the longer string before the char-key
-          ;;          (because F-keys are 3 chars longs in their representation)
+          (clear-footer-text xile-footer)
           (addstr xile-footer (format #f "Press q to quit (you pressed ~a)" ch) #:y 1 #:x 0)
           (refresh xile-footer)
           (loop (getch xile-main))))))
