@@ -22,7 +22,7 @@
 
 (check (cdr (xile-msg-edit-insert "test_view" '())) => "{\"id\":3,\"method\":\"edit\",\"params\":{\"method\":\"insert\",\"view_id\":\"test_view\",\"params\":{}}}")
 (check (cdr (xile-msg-edit-paste "test_view" '((chars . "password")))) => "{\"id\":4,\"method\":\"edit\",\"params\":{\"method\":\"paste\",\"view_id\":\"test_view\",\"params\":{\"chars\":\"password\"}}}")
-(check (cdr (xile-msg-edit-move_right "test_view")) => "{\"id\":5,\"method\":\"edit\",\"params\":{\"method\":\"move_right\",\"view_id\":\"test_view\",\"params\":{}}}")
+(check (cdr (xile-msg-edit-move_right "test_view")) => "{\"id\":5,\"method\":\"edit\",\"params\":{\"method\":\"move_right\",\"view_id\":\"test_view\"}}")
 
 (check-report)
 (exit (if (and (= (length test-errors) 0) (= 0 (length check:failed))) 0 1))
