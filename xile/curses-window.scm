@@ -94,7 +94,8 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
       (let ((view_id #f)                ; The internal identifier for xi
             (bufwin (make-xile-main))   ; The associated ncurses window/panel
             (file_path file_path)
-            (to-xi port-to-xi))
+            (to-xi port-to-xi)
+            (bufwin-guard (make-mutex)))
 
         (define dispatch #f)          ; dispatch acts as "this" in OOP-languages
 
@@ -123,14 +124,18 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
           (xile-rpc-send to-xi (xile-msg-edit-scroll view_id min-line max-line)))
 
         (define (cb-scroll-to y x)
-          (move bufwin y x)
-          (refresh bufwin))
+          (with-mutex bufwin-guard
+            (move bufwin y x)
+            (refresh bufwin)))
 
         (define (cb-update result)
-          (addstr bufwin
-                  (format #f "~a" (assoc-ref (vector-ref (assoc-ref (vector-ref (assoc-ref (assoc-ref result "update") "ops") 0) "lines") 0) "text"))
-                  #:y 0 #:x 0)
-          (refresh bufwin))
+          ;; The "update" callback here is just badly extracting the text
+          ;; from the first line of updates.
+          (with-mutex bufwin-guard
+            (addstr bufwin
+                    (format #f "~a" (assoc-ref (vector-ref (assoc-ref (vector-ref (assoc-ref (assoc-ref result "update") "ops") 0) "lines") 0) "text"))
+                    #:y 0 #:x 0)
+            (refresh bufwin)))
 
         (set! dispatch
           (lambda (m)
