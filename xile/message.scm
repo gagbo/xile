@@ -71,18 +71,18 @@
             xile-msg-plugin-selection_into_lines))
 
 
-(define* (xile-notif-generic method #:key (notif-param-list '()))
-  (cons #f (scm->json-string `((method . ,method) (params . ,notif-param-list)))))
+(define* (xile-notif-generic method #:key (notif-param-alist '()))
+  (cons #f (scm->json-string `((method . ,method) (params . ,notif-param-alist)))))
 
 (define xile-msg-generic #f)
 (let ((id 0))
-  (set! xile-msg-generic (lambda* (method #:key (msg-param-list '()))
+  (set! xile-msg-generic (lambda* (method #:key (msg-param-alist '()))
                            (set! id (1+ id))
-                           (cons id (scm->json-string `((id . ,id) (method . ,method) (params . ,msg-param-list)))))))
+                           (cons id (scm->json-string `((id . ,id) (method . ,method) (params . ,msg-param-alist)))))))
 
 ;; TODO : namespace should be a string or a symbol
-(define* (xile-msg-namespace-generic namespace method #:key (ns-param-list '()))
-  (xile-msg-generic namespace #:msg-param-list (acons 'method method ns-param-list))
+(define* (xile-msg-namespace-generic namespace method #:key (ns-param-alist '()))
+  (xile-msg-generic namespace #:msg-param-alist (acons 'method method ns-param-alist))
       )
 
 (define* (xile-msg-init #:key (config_dir #f) (client_extras_dir #f))
@@ -95,7 +95,7 @@ and the client_extras_dir points to a directory where the frontend can package
 additional resources, such as bundled plugins."
   (xile-notif-generic
    'client_started
-   #:notif-param-list (cond ((and config_dir client_extras_dir)
+   #:notif-param-alist (cond ((and config_dir client_extras_dir)
                              `((config_dir . ,config_dir) (client_extras_dir . ,client_extras_dir)))
                             (config_dir
                              `((config_dir . ,config_dir)))
@@ -116,35 +116,35 @@ should be done with extreme caution.
 
 Response from manual testing : ((result . view-id-1) (id . 1))"
   (if file_path
-      (xile-msg-generic 'new_view #:msg-param-list `((file_path . ,file_path)))
+      (xile-msg-generic 'new_view #:msg-param-alist `((file_path . ,file_path)))
       (xile-msg-generic 'new_view)))
 
 (define* (xile-msg-close_view #:key (view_id "view-id-1"))
   "close_view {\"VIEW_ID\": \"view-id-1\"}
 
 Closes the view associated with this view_id."
-  (xile-msg-generic 'close_view #:msg-param-list `((view_id . ,view_id))))
+  (xile-msg-generic 'close_view #:msg-param-alist `((view_id . ,view_id))))
 
 (define* (xile-msg-save #:key (view_id "view-id-1") (file_path "test.txt"))
   "save {\"view_id\": \"view-id-4\", \"file_path\": \"save.txt\"}
 
 Saves the buffer associated with view_id to file_path.
 See the note for new_view. Errors are not currently reported."
-  (xile-msg-generic 'save #:msg-param-list `((view_id . ,view_id) (file_path . ,file_path))))
+  (xile-msg-generic 'save #:msg-param-alist `((view_id . ,view_id) (file_path . ,file_path))))
 
 (define* (xile-msg-set_theme #:key (theme_name "InspiredGitHub"))
   "set_theme {\"theme_name\": \"InspiredGitHub\"}
 
 Asks core to change the theme. If the change succeeds the client will receive
 a theme_changed notification."
-  (xile-msg-generic 'set_theme #:msg-param-list `((theme_name . ,theme_name))))
+  (xile-msg-generic 'set_theme #:msg-param-alist `((theme_name . ,theme_name))))
 
 (define* (xile-msg-set_language #:key (view_id "view-id-1") (language_id "Scheme"))
   "set_language {\"view-id\":\"view-id-1\", \"language_id\":\"Rust\"}
 
 Asks core to change the language of the buffer associated with the view_id.
 If the change succeeds the client will receive a language_changed notification."
-  (xile-msg-generic 'set_language #:msg-param-list `((view_id . ,view_id) (language_id . ,language_id))))
+  (xile-msg-generic 'set_language #:msg-param-alist `((view_id . ,view_id) (language_id . ,language_id))))
 
 (define* (xile-msg-modify_user_config #:key (domain "general") (changes '()))
   "modify_user_config { \"domain\": Domain, \"changes\": Object }
@@ -156,26 +156,26 @@ where \"rust\" is any valid syntax identifier, and \"view-id-1\" is
 the identifier of any open view.
 
 The object form is given in an alist."
-  (xile-msg-generic 'modify_user_config #:msg-param-list `((domain . ,domain) (changes . ,changes))))
+  (xile-msg-generic 'modify_user_config #:msg-param-alist `((domain . ,domain) (changes . ,changes))))
 
 (define* (xile-msg-get_config #:key (view_id "view-id-1"))
   "get_config {\"view_id\": \"view-id-1\"} -> Object
 
 Returns the config table for the view associated with this view_id."
-  (xile-msg-generic 'get_config #:msg-param-list `((view_id . ,view_id))))
+  (xile-msg-generic 'get_config #:msg-param-alist `((view_id . ,view_id))))
 
-(define* (xile-msg-edit-generic method view_id #:key (edit-param-list '()))
+(define* (xile-msg-edit-generic method view_id #:key (edit-param-alist '()))
   "edit {\"method\": \"insert\", \"params\": {\"chars\": \"A\"}, \"view_id\": \"view-id-4\"}
 
 Dispatches the inner method to the per-tab handler,
 with individual inner methods used later"
-  (xile-msg-namespace-generic 'edit method #:ns-param-list `((view_id . ,view_id) (params . ,edit-param-list))))
+  (xile-msg-namespace-generic 'edit method #:ns-param-alist `((view_id . ,view_id) (params . ,edit-param-alist))))
 
 (define (xile-msg-edit-insert view_id chars)
   "insert {\"chars\":\"A\"}
 
 Inserts the chars string at the current cursor locations."
-  (xile-msg-edit-generic 'insert view_id #:edit-param-list `((chars . ,chars))))
+  (xile-msg-edit-generic 'insert view_id #:edit-param-alist `((chars . ,chars))))
 
 (define* (xile-msg-edit-paste view_id chars)
   "paste {\"chars\": \"password\"}
@@ -184,7 +184,7 @@ Inserts the chars string at the current cursor locations. If there are
 multiple cursors and chars has the same number of lines as there are cursors,
 one line will be inserted at each cursor, in order; otherwise the full string
 will be inserted at each cursor."
-  (xile-msg-edit-generic 'paste view_id #:edit-param-list `((chars . ,chars))))
+  (xile-msg-edit-generic 'paste view_id #:edit-param-alist `((chars . ,chars))))
 
 (define (xile-msg-edit-copy view_id)
   "copy -> String|Null
@@ -212,7 +212,7 @@ controls the size of the fragment sent in the update method."
   ;; (xile-msg-edit-generic 'scroll view_id #(start end))
   (xile-notif-generic
    'edit
-   #:notif-param-list `((method . scroll) (view_id . ,view_id) (params . #(,start ,end)))))
+   #:notif-param-alist `((method . scroll) (view_id . ,view_id) (params . #(,start ,end)))))
 
 (define (xile-msg-edit-resize view_id width height)
   "resize {width: 420, height: 400}
@@ -220,7 +220,7 @@ controls the size of the fragment sent in the update method."
 Notifies the backend that the size of the view has changed. This is used for
 word wrapping, if enabled. Width and height are specified in px units /
 points, not display pixels."
-  (xile-msg-edit-generic 'resize view_id #:edit-param-list `((width . ,width) (height . ,height))))
+  (xile-msg-edit-generic 'resize view_id #:edit-param-alist `((width . ,width) (height . ,height))))
 
 (define (xile-msg-edit-click view_id line column modifiers count)
   "click [42,31,0,1]
@@ -230,7 +230,7 @@ utf-8 code units), modifiers (again, 2 is shift), and click count."
   ;; (xile-msg-edit-generic 'click view_id #(line column modifiers count))
   (xile-notif-generic
    'edit
-   #:notif-param-list `((method . click) (view_id . ,view_id) (params . #(,line ,column ,modifiers ,count)))))
+   #:notif-param-alist `((method . click) (view_id . ,view_id) (params . #(,line ,column ,modifiers ,count)))))
 
 (define (xile-msg-edit-drag view_id line column flag)
   "drag [42,32,0]
@@ -240,7 +240,7 @@ flag as in click."
   ;; (xile-msg-edit-generic 'drag view_id #(line column flag))
   (xile-notif-generic
    'edit
-   #:notif-param-list `((method . drag) (view_id . ,view_id) (params . #(,line ,column ,flag)))))
+   #:notif-param-alist `((method . drag) (view_id . ,view_id) (params . #(,line ,column ,flag)))))
 
 (define (xile-msg-edit-gesture view_id gesture line column)
   "gesture {\"line\": 42, \"col\": 31, \"ty\": \"toggle_sel\"}
@@ -256,14 +256,14 @@ line_select # sets the selection to a given line
 word_select # sets the selection to a given word
 multi_line_select # adds a line to the selection
 multi_word_select # adds a word to the selection"
-  (xile-msg-edit-generic 'gesture view_id #:edit-param-list `((ty . ,gesture) (line . ,line) (col . ,column))))
+  (xile-msg-edit-generic 'gesture view_id #:edit-param-alist `((ty . ,gesture) (line . ,line) (col . ,column))))
 
 (define (xile-msg-edit-goto_line view_id line)
   "goto_line {\"line\": 1}
 
 Sets the cursor to the beginning of the provided line and scrolls to this
 position."
-  (xile-msg-edit-generic 'goto_line view_id #:edit-param-list `((line . ,line))))
+  (xile-msg-edit-generic 'goto_line view_id #:edit-param-alist `((line . ,line))))
 
 ;; Other movement and deletion commands
 ;;
@@ -413,13 +413,13 @@ position."
 ;; If the name provided does not match the current recording name, the events
 ;; for the current recording are dismissed.
 (define (xile-msg-edit-toggle_recording view_id record_name)
-  (xile-msg-edit-generic 'toggle_recording view_id #:edit-param-list `((recording_name . ,record_name))))
+  (xile-msg-edit-generic 'toggle_recording view_id #:edit-param-alist `((recording_name . ,record_name))))
 
 (define (xile-msg-edit-play_recording view_id record_name)
-  (xile-msg-edit-generic 'play_recording view_id #:edit-param-list `((recording_name . ,record_name))))
+  (xile-msg-edit-generic 'play_recording view_id #:edit-param-alist `((recording_name . ,record_name))))
 
 (define (xile-msg-edit-clear_recording view_id record_name)
-  (xile-msg-edit-generic 'clear_recording view_id #:edit-param-list `((recording_name . ,record_name))))
+  (xile-msg-edit-generic 'clear_recording view_id #:edit-param-alist `((recording_name . ,record_name))))
 
 ;; LSP stuff in edit namespace
 
@@ -431,9 +431,9 @@ notification. The client is forwarded result back via a show_hover rpc
 
 If position is skipped in the request, current cursor position will be used
 in core."
-  (xile-msg-edit-generic 'request_hover view_id #:edit-param-list  `((request_id . ,req_id) (position . ((line . ,line) (column . ,column))))))
+  (xile-msg-edit-generic 'request_hover view_id #:edit-param-alist  `((request_id . ,req_id) (position . ((line . ,line) (column . ,column))))))
 
-(define* (xile-msg-plugin-generic method view_id #:key (plugin-param-list '()))
+(define* (xile-msg-plugin-generic method view_id #:key (plugin-param-alist '()))
   "Plugin namespace
 
 Note: plugin commands are in flux, and may change.
@@ -441,15 +441,15 @@ Note: plugin commands are in flux, and may change.
 Example: The following RPC dispatches the inner method to the plugin manager.
 
 plugin {\"method\": \"start\", params: {\"view_id\": \"view-id-1\", plugin_name: \"syntect\"}}"
-  (xile-msg-namespace-generic 'plugin method #:ns-param-list `((params . ,(acons 'view_id view_id plugin-param-list)))))
+  (xile-msg-namespace-generic 'plugin method #:ns-param-alist `((params . ,(acons 'view_id view_id plugin-param-alist)))))
 
 (define (xile-msg-plugin-start view_id plugin_name)
   "Starts the named plugin for the given view."
-  (xile-msg-plugin-generic 'start view_id #:plugin-param-list `((plugin_name . ,plugin_name))))
+  (xile-msg-plugin-generic 'start view_id #:plugin-param-alist `((plugin_name . ,plugin_name))))
 
 (define (xile-msg-plugin-stop view_id plugin_name)
   "Stops the named plugin for the given view."
-  (xile-msg-plugin-generic 'stop view_id #:plugin-param-list `((plugin_name . ,plugin_name))))
+  (xile-msg-plugin-generic 'stop view_id #:plugin-param-alist `((plugin_name . ,plugin_name))))
 
 (define (xile-msg-plugin-rpc view_id plugin_name request)
   "Sends a custom rpc command to the named receiver. This may be a notification
@@ -466,14 +466,14 @@ In that example, REQUEST is
     ((method . \"custom_method\")
      (params .
         ((foo . \"bar\"))))))"
-  (xile-msg-plugin-generic 'plugin_rpc view_id #:plugin-param-list `((receiver . ,plugin_name) ,request)))
+  (xile-msg-plugin-generic 'plugin_rpc view_id #:plugin-param-alist `((receiver . ,plugin_name) ,request)))
 
 (define* (xile-msg-plugin-find view_id chars case_sen #:optional (regex #f) (whole_words #f))
   "find {\"chars\": \"a\", \"case_sensitive\": false, \"regex\": false, \"whole_words\":
 true} Parameters regex and whole_words are optional and by default false.
 
 Sets the current search query and options."
-  (xile-msg-plugin-generic 'find view_id #:plugin-param-list `((chars . ,chars) (case_sensitive . ,case_sen) (regex . ,regex) (whole_words . ,whole_words))))
+  (xile-msg-plugin-generic 'find view_id #:plugin-param-alist `((chars . ,chars) (case_sensitive . ,case_sen) (regex . ,regex) (whole_words . ,whole_words))))
 
 (define* (xile-msg-plugin-multi_find view_id id chars case_sen #:optional (regex #f) (whole_words #f))
   "This find command supports multiple search queries.
@@ -485,7 +485,7 @@ query. If left empty, the query is considered as a new query and the backend
 will generate a new ID.
 
 Sets the current search queries and options."
-  (xile-msg-plugin-generic 'multi_find view_id #:plugin-param-list `((id . ,id) (chars . ,chars) (case_sensitive . ,case_sen) (regex . ,regex) (whole_words . ,whole_words))))
+  (xile-msg-plugin-generic 'multi_find view_id #:plugin-param-alist `((id . ,id) (chars . ,chars) (case_sensitive . ,case_sen) (regex . ,regex) (whole_words . ,whole_words))))
 
 (define* (xile-msg-plugin-find_next view_id #:optional (wrap_around #f) (allow_same #f) (modify_selection "set"))
   "find_next {\"wrap_around\": true, \"allow_same\": false, \"modify_selection\": \"set\"}
@@ -502,7 +502,7 @@ add_removing_current: the previously added selection will be removed and the
   next/previous match will be added to the current selection
 
 Selects the next/previous occurrence matching the search query."
-  (xile-msg-plugin-generic 'find_next view_id #:plugin-param-list `((wrap_around . ,wrap_around) (allow_same . ,allow_same) (modify_selection . ,modify_selection))))
+  (xile-msg-plugin-generic 'find_next view_id #:plugin-param-alist `((wrap_around . ,wrap_around) (allow_same . ,allow_same) (modify_selection . ,modify_selection))))
 
 (define* (xile-msg-plugin-find_previous view_id #:optional (wrap_around #f) (allow_same #f) (modify_selection "set"))
   "find_previous {\"wrap_around\": true, \"allow_same\": false, \"modify_selection\": \"set\"}
@@ -519,7 +519,7 @@ add_removing_current: the previously added selection will be removed and the
   next/previous match will be added to the current selection
 
 Selects the next/previous occurrence matching the search query."
-  (xile-msg-plugin-generic 'find_previous view_id #:plugin-param-list `((wrap_around . ,wrap_around) (allow_same . ,allow_same) (modify_selection . ,modify_selection))))
+  (xile-msg-plugin-generic 'find_previous view_id #:plugin-param-alist `((wrap_around . ,wrap_around) (allow_same . ,allow_same) (modify_selection . ,modify_selection))))
 
 (define (xile-msg-plugin-find_all view_id)
   "find_all { }
@@ -531,28 +531,28 @@ Selects all occurrences matching the search query."
   "highlight_find {\"visible\": true}
 
 Shows/hides active search highlights."
-  (xile-msg-plugin-generic 'highlight_find view_id #:plugin-param-list `((visible . ,visible))))
+  (xile-msg-plugin-generic 'highlight_find view_id #:plugin-param-alist `((visible . ,visible))))
 
 (define* (xile-msg-plugin-selection_for_find view_id #:optional (case_sen #f))
   "selection_for_find {\"case_sensitive\": false}
 The parameter case_sensitive is optional and false if not set.
 
 Sets the current selection as the search query."
-  (xile-msg-plugin-generic 'selection_for_find view_id #:plugin-param-list `((case_sensitive . ,case_sen))))
+  (xile-msg-plugin-generic 'selection_for_find view_id #:plugin-param-alist `((case_sensitive . ,case_sen))))
 
 (define* (xile-msg-plugin-replace view_id chars #:optional (preserve_case #f))
   "replace {\"chars\": \"a\", \"preserve_case\": false}
 The parameter preserve_case is currently not implemented and ignored.
 
 Sets the replacement string."
-  (xile-msg-plugin-generic 'replace view_id #:plugin-param-list `((chars . ,chars) (preserve_case . ,preserve_case))))
+  (xile-msg-plugin-generic 'replace view_id #:plugin-param-alist `((chars . ,chars) (preserve_case . ,preserve_case))))
 
 (define* (xile-msg-plugin-selection_for_replace view_id #:optional (case_sen #f))
   "selection_for_replace {\"case_sensitive\": false}
 The parameter case_sensitive is optional and false if not set.
 
 Sets the current selection as the replacement string."
-  (xile-msg-plugin-generic 'selection_for_replace view_id #:plugin-param-list `((case_sensitive . ,case_sen))))
+  (xile-msg-plugin-generic 'selection_for_replace view_id #:plugin-param-alist `((case_sensitive . ,case_sen))))
 
 (define (xile-msg-plugin-replace_next view_id)
   "replace_next { }
