@@ -93,7 +93,7 @@
       (set-current-output-port (open "logs/xile-out.log" (logior O_APPEND O_CREAT O_WRONLY)))
 
       ;; Xi init code
-      (xile-rpc-send port-to-xi (xile-msg-init '()))
+      (xile-rpc-send port-to-xi (xile-msg-init))
 
       (begin
         ;; HACK register notification callback
@@ -141,7 +141,7 @@
            (format #t "available_languages unimplemented !~%")))
 
         ;; HACK open file
-        (let ((msg (xile-msg-new_view '((file_path . "README.org")))))
+        (let ((msg (xile-msg-new_view #:file_path "README.org")))
           (xile-register-callback
            (car msg)
            (lambda (result)
