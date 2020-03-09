@@ -6,8 +6,8 @@
   #:use-module (ncurses curses)
   #:use-module (ice-9 futures)
   #:use-module (ice-9 threads)
-  #:export (make-buffer
-            find-buffer
+  #:export (make-xile-buffer
+            find-xile-buffer
             make-xile-footer
             update-footer
             clear-footer-text
@@ -65,19 +65,19 @@
          (starty 1))
     (newwin height width starty startx)))
 
-(define make-buffer (lambda* (port #:optional path) (error "Make buffer is defined but not properly set")))
-(define find-buffer #f)
+(define make-xile-buffer (lambda* (port #:optional path) (error "Make buffer is defined but not properly set")))
+(define find-xile-buffer #f)
 
 (let
     ((id-to-buffer (make-hash-table 31))
      (id-to-buffer-guard (make-mutex)))
 
-  (set! find-buffer
+  (set! find-xile-buffer
     (lambda (view_id)
       (with-mutex id-to-buffer-guard
         (hashq-ref id-to-buffer view_id))))
 
-  (set! make-buffer
+  (set! make-xile-buffer
     (lambda* (port-to-xi #:optional file_path)
       (let ((view_id #f)                ; The internal identifier for xi
             (bufwin (make-xile-main))   ; The associated ncurses window/panel
@@ -139,6 +139,6 @@
                   ((eq? m 'scroll) scroll)
                   ((eq? m 'cb-scroll-to) cb-scroll-to)
                   ((eq? m 'cb-update) cb-update)
-                  (else (error (format #f "Unknown request : MAKE-BUFFER ~a~%" m))))))
+                  (else (error (format #f "Unknown request : MAKE-XILE-BUFFER ~a~%" m))))))
 
         dispatch))))

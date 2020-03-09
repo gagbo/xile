@@ -51,7 +51,7 @@
          ;; from the first line of updates.
          (lambda (result)
            (let* ((view_id (assoc-ref result "view_id"))
-                  (xile-buffer (find-buffer (string->symbol view_id))))
+                  (xile-buffer (find-xile-buffer (string->symbol view_id))))
              (format #t "Update : xile-buffer for ~a is ~a~%" view_id xile-buffer)
              (when xile-buffer
                ((xile-buffer 'cb-update) result)))))
@@ -62,7 +62,7 @@
            (let* ((y (assoc-ref result "line"))
                  (x (assoc-ref result "col"))
                  (view_id (assoc-ref result "view_id"))
-                 (xile-buffer (find-buffer (string->symbol view_id))))
+                 (xile-buffer (find-xile-buffer (string->symbol view_id))))
              (format #t "Scroll-to : xile-buffer for ~a is ~a~%" view_id xile-buffer)
              (when xile-buffer
                ((xile-buffer 'cb-scroll-to) y x)))
@@ -94,7 +94,7 @@
            (format #t "available_languages unimplemented !~%")))
 
         ;; HACK open / manipulate file
-        (define first-buffer (make-buffer port-to-xi "README.org"))
+        (define first-buffer (make-xile-buffer port-to-xi "README.org"))
         ((first-buffer 'create-view))
         ((first-buffer 'scroll) 0 (- (lines) 3))
         )
