@@ -158,6 +158,8 @@
              (refresh xile-main)))
           (xile-rpc-send port-to-xi msg)))
 
+      (xile-rpc-send port-to-xi (xile-msg-edit-scroll "view-id-1" 0 (- (cols) 3)))
+
       ;; Main event loop
       (let loop ((ch (getch xile-main)))
         (cond
