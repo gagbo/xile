@@ -71,24 +71,19 @@
             xile-msg-plugin-selection_into_lines))
 
 
-(define* (xile-notif-generic method #:key (notif-param-list #f))
-  (if notif-param-list
-      (cons #f (scm->json-string `((method . ,method) (params . ,notif-param-list))))
-      (cons #f (scm->json-string `((method . ,method))))))
+(define* (xile-notif-generic method #:key (notif-param-list '()))
+  (cons #f (scm->json-string `((method . ,method) (params . ,notif-param-list)))))
 
 (define xile-msg-generic #f)
 (let ((id 0))
-  (set! xile-msg-generic (lambda* (method #:key (msg-param-list #f))
+  (set! xile-msg-generic (lambda* (method #:key (msg-param-list '()))
                            (set! id (1+ id))
-                           (if msg-param-list
-                               (cons id (scm->json-string `((id . ,id) (method . ,method) (params . ,msg-param-list))))
-                               (cons id (scm->json-string `((id . ,id) (method . ,method))))))))
+                           (cons id (scm->json-string `((id . ,id) (method . ,method) (params . ,msg-param-list)))))))
 
 ;; TODO : namespace should be a string or a symbol
-(define* (xile-msg-namespace-generic namespace method #:key (ns-param-list #f))
-  (if ns-param-list
-      (xile-msg-generic namespace #:msg-param-list (acons 'method method ns-param-list))
-      (xile-msg-generic namespace #:msg-param-list `((method . ,method)))))
+(define* (xile-msg-namespace-generic namespace method #:key (ns-param-list '()))
+  (xile-msg-generic namespace #:msg-param-list (acons 'method method ns-param-list))
+      )
 
 (define* (xile-msg-init #:key (config_dir #f) (client_extras_dir #f))
   "client_started {\"config_dir\" \"some/path\"?, \"client_extras_dir\": \"some/other/path\"?}
@@ -106,7 +101,7 @@ additional resources, such as bundled plugins."
                              `((config_dir . ,config_dir)))
                             (client_extras_dir
                              `((client_extras_dir . ,client_extras_dir)))
-                            (else #f))))
+                            (else '()))))
 
 (define* (xile-msg-new_view #:key (file_path #f))
   "new_view { \"file_path\": \"path.md\"? } -> \"view-id-1\"
@@ -169,33 +164,27 @@ The object form is given in an alist."
 Returns the config table for the view associated with this view_id."
   (xile-msg-generic 'get_config #:msg-param-list `((view_id . ,view_id))))
 
-(define* (xile-msg-edit-generic method view_id #:key (edit-param-list #f))
+(define* (xile-msg-edit-generic method view_id #:key (edit-param-list '()))
   "edit {\"method\": \"insert\", \"params\": {\"chars\": \"A\"}, \"view_id\": \"view-id-4\"}
 
 Dispatches the inner method to the per-tab handler,
 with individual inner methods used later"
-  (if edit-param-list
-      (xile-msg-namespace-generic 'edit method #:ns-param-list `((view_id . ,view_id) (params . ,edit-param-list)))
-      (xile-msg-namespace-generic 'edit method #:ns-param-list `((view_id . ,view_id)))))
+  (xile-msg-namespace-generic 'edit method #:ns-param-list `((view_id . ,view_id) (params . ,edit-param-list))))
 
-(define* (xile-msg-edit-insert view_id #:key (chars #f))
+(define (xile-msg-edit-insert view_id chars)
   "insert {\"chars\":\"A\"}
 
 Inserts the chars string at the current cursor locations."
-  (if chars
-      (xile-msg-edit-generic 'insert view_id #:edit-param-list `((chars . ,chars)))
-      (xile-msg-edit-generic 'insert view_id)))
+  (xile-msg-edit-generic 'insert view_id #:edit-param-list `((chars . ,chars))))
 
-(define* (xile-msg-edit-paste view_id #:key (chars #f))
+(define* (xile-msg-edit-paste view_id chars)
   "paste {\"chars\": \"password\"}
 
 Inserts the chars string at the current cursor locations. If there are
 multiple cursors and chars has the same number of lines as there are cursors,
 one line will be inserted at each cursor, in order; otherwise the full string
 will be inserted at each cursor."
-  (if chars
-      (xile-msg-edit-generic 'paste view_id #:edit-param-list `((chars . ,chars)))
-      (xile-msg-edit-generic 'paste view_id)))
+  (xile-msg-edit-generic 'paste view_id #:edit-param-list `((chars . ,chars))))
 
 (define (xile-msg-edit-copy view_id)
   "copy -> String|Null
@@ -444,7 +433,7 @@ If position is skipped in the request, current cursor position will be used
 in core."
   (xile-msg-edit-generic 'request_hover view_id #:edit-param-list  `((request_id . ,req_id) (position . ((line . ,line) (column . ,column))))))
 
-(define* (xile-msg-plugin-generic method view_id #:key (plugin-param-list #f))
+(define* (xile-msg-plugin-generic method view_id #:key (plugin-param-list '()))
   "Plugin namespace
 
 Note: plugin commands are in flux, and may change.
@@ -452,9 +441,7 @@ Note: plugin commands are in flux, and may change.
 Example: The following RPC dispatches the inner method to the plugin manager.
 
 plugin {\"method\": \"start\", params: {\"view_id\": \"view-id-1\", plugin_name: \"syntect\"}}"
-  (if plugin-param-list
-      (xile-msg-namespace-generic 'plugin method #:ns-param-list `((params . ,(acons 'view_id view_id plugin-param-list))))
-      (xile-msg-namespace-generic 'plugin method #:ns-param-list `((params . ((view_id . ,view_id)))))))
+  (xile-msg-namespace-generic 'plugin method #:ns-param-list `((params . ,(acons 'view_id view_id plugin-param-list)))))
 
 (define (xile-msg-plugin-start view_id plugin_name)
   "Starts the named plugin for the given view."
