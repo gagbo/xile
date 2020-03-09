@@ -65,7 +65,7 @@
          (starty 1))
     (newwin height width starty startx)))
 
-(define make-xile-buffer (lambda* (port #:optional path) (error "Make buffer is defined but not properly set")))
+(define make-xile-buffer #f)
 (define find-xile-buffer #f)
 
 (let
@@ -74,11 +74,23 @@
 
   (set! find-xile-buffer
     (lambda (view_id)
+      "Find a buffer from VIEW_ID. Return #f if VIEW_ID is not registered yet."
       (with-mutex id-to-buffer-guard
         (hashq-ref id-to-buffer view_id))))
 
   (set! make-xile-buffer
     (lambda* (port-to-xi #:optional file_path)
+      "Create a buffer with PORT-TO-XI used to send messages to xi-core process.
+
+Optional FILE_PATH can be given to set the view to point to a file.
+
+The dispatching of the returned lambda can be checked in source code.
+- cb* messages/procedures regard callbacks to back-end notifications
+- Other messages/procedures usually wrap message sending to xi
+- A few accessors for the variables in the closures are added
+
+Opening multiple buffers pointing to the same FILE_PATH is undefined behaviour,
+as of 2020-03-09, xi doesn't handle multiple views of a single file."
       (let ((view_id #f)                ; The internal identifier for xi
             (bufwin (make-xile-main))   ; The associated ncurses window/panel
             (file_path file_path)
@@ -94,16 +106,6 @@
             (xile-register-callback
              (car msg)
              (lambda (result)
-               ;; TODO : Make a real structure around xile-main to hold some state
-               ;;
-               ;; I want to go with the one window = one view pattern
-               ;; (eventually using panels to superimpose different views between the header and the footer)
-               ;; Therefore, the xile-main window needs to be associated with the "view_id" returned somehow
-               ;;
-               ;; An application level (view_id: symbol -> Panel/window struct) hash map will be implemented.
-               ;; This map will have :
-               ;; - some writes in this callback, and
-               ;; - some reads in basically all back_end notifications callbacks
                (lock-mutex id-to-buffer-guard)
                (when (and view_id (hashq-get-handle id-to-buffer view_id))
                  hashq-remove! id-to-buffer view_id)
