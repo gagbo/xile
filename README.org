@@ -6,7 +6,6 @@ Editor using GNU Guile and libraries.
 * Table of Contents :TOC_3:noexport:
 - [[#dependencies][Dependencies]]
 - [[#objectives][Objectives]]
-- [[#test-directory]["Test" directory]]
 
 * Dependencies
 
@@ -20,6 +19,3 @@ package definitions for the dependencies which are not yet in guix packages.
 - See how difficult it is to build software with a json interface to a provider
   (here we are using [[https://github.com/xi-editor/xi-editor][Xi Editor]] as the core text editor)
 
-* "Test" directory
-This [[./test][Test directory]] does not contain tests. It currently acts as an archive for my
-playground to test some files.
