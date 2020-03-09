@@ -4,6 +4,7 @@
 (add-to-load-path (dirname (current-filename)))
 (use-modules (ncurses curses)
              (ice-9 threads)            ;; For the join-thread in main
+             (ice-9 futures)
              (xile message)
              (xile json-rpc))
 
@@ -58,6 +59,82 @@
          (starty 1))
     (newwin height width starty startx)))
 
+(define make-buffer #f)
+(define find-buffer #f)
+(let 
+    ((id-to-buffer (make-hash-table 31))
+     (id-to-buffer-guard (make-mutex)))
+
+  (set! find-buffer
+    (lambda (view_id)
+      (with-mutex id-to-buffer-guard
+        (hashq-ref id-to-buffer view_id))))
+
+  (set! make-buffer
+    (lambda* (port-to-xi #:optional file_path)
+      (let ((view_id #f)                ; The internal identifier for xi
+            (bufwin (make-xile-main))   ; The associated ncurses window/panel
+            (file_path file_path)
+            (to-xi port-to-xi))
+
+        (define dispatch #f)          ; dispatch acts as "this" in OOP-languages
+
+        (define (create-view) ; "" Constructor "" => sends a "new_view" message and sets the attribute in the callback
+          (let ((msg (xile-msg-new_view #:file_path file_path))
+                (wait-for-id (make-condition-variable))
+                (guard-wait (make-mutex)))
+            (xile-register-callback
+             (car msg)
+             (lambda (result)
+               ;; TODO : Make a real structure around xile-main to hold some state
+               ;;
+               ;; I want to go with the one window = one view pattern
+               ;; (eventually using panels to superimpose different views between the header and the footer)
+               ;; Therefore, the xile-main window needs to be associated with the "view_id" returned somehow
+               ;;
+               ;; An application level (view_id: symbol -> Panel/window struct) hash map will be implemented.
+               ;; This map will have :
+               ;; - some writes in this callback, and
+               ;; - some reads in basically all back_end notifications callbacks
+               (lock-mutex id-to-buffer-guard)
+               (when (and view_id (hashq-get-handle id-to-buffer view_id))
+                 hashq-remove! id-to-buffer view_id)
+               (hashq-set! id-to-buffer (string->symbol result) dispatch)
+               (unlock-mutex id-to-buffer-guard)
+               (set! view_id result)
+               (signal-condition-variable wait-for-id)))
+            ;; HACK : using a condvar here means we need to lock/unlock a mutex.
+            ;; Seems weird
+            (xile-rpc-send to-xi msg)
+            (with-mutex id-to-buffer-guard
+              (wait-condition-variable wait-for-id id-to-buffer-guard))))
+
+        (define (scroll min-line max-line)
+          (xile-rpc-send to-xi (xile-msg-edit-scroll view_id min-line max-line)))
+
+        (define (cb-scroll-to y x)
+          (move bufwin y x)
+          (refresh bufwin))
+
+        (define (cb-update result)
+          (addstr bufwin
+                  (format #f "~a" (assoc-ref (vector-ref (assoc-ref (vector-ref (assoc-ref (assoc-ref result "update") "ops") 0) "lines") 0) "text"))
+                  #:y 0 #:x 0)
+          (refresh bufwin))
+
+        (set! dispatch
+          (lambda (m)
+            (cond ((eq? m 'get-view_id) view_id)
+                  ((eq? m 'get-win) bufwin)
+                  ((eq? m 'get-file_path) file_path)
+                  ((eq? m 'create-view) create-view)
+                  ((eq? m 'scroll) scroll)
+                  ((eq? m 'cb-scroll-to) cb-scroll-to)
+                  ((eq? m 'cb-update) cb-update)
+                  (else (error (format #f "Unknown request : MAKE-BUFFER ~a~%" m))))))
+
+        dispatch))))
+
 ;; Main
 (define (main args)
   ;; This let initializes resources
@@ -102,18 +179,23 @@
          ;; The "update" callback here is just badly extracting the text
          ;; from the first line of updates.
          (lambda (result)
-           (addstr xile-main
-                   (format #f "~a" (assoc-ref (vector-ref (assoc-ref (vector-ref (assoc-ref (assoc-ref result "update") "ops") 0) "lines") 0) "text"))
-                   #:y 0 #:x 0)
-           (refresh xile-main)))
+           (let* ((view_id (assoc-ref result "view_id"))
+                  (xile-buffer (find-buffer (string->symbol view_id))))
+             (format #t "Update : xile-buffer for ~a is ~a~%" view_id xile-buffer)
+             (when xile-buffer
+               ((xile-buffer 'cb-update) result)))))
 
         (xile-register-callback
          'scroll_to
          (lambda (result)
-           (let ((y (assoc-ref result "line"))
-                 (x (assoc-ref result "col")))
-             (move xile-main y x))
-           (refresh xile-main)))
+           (let* ((y (assoc-ref result "line"))
+                 (x (assoc-ref result "col"))
+                 (view_id (assoc-ref result "view_id"))
+                 (xile-buffer (find-buffer (string->symbol view_id))))
+             (format #t "Scroll-to : xile-buffer for ~a is ~a~%" view_id xile-buffer)
+             (when xile-buffer
+               ((xile-buffer 'cb-scroll-to) y x)))
+           ))
 
         (xile-register-callback
          'language_changed
@@ -140,25 +222,13 @@
          (lambda (result)
            (format #t "available_languages unimplemented !~%")))
 
-        ;; HACK open file
-        (let ((msg (xile-msg-new_view #:file_path "README.org")))
-          (xile-register-callback
-           (car msg)
-           (lambda (result)
-             ;; TODO : Make a real structure around xile-main to hold some state
-             ;;
-             ;; I want to go with the one window = one view pattern
-             ;; (eventually using panels to superimpose different views between the header and the footer)
-             ;; Therefore, the xile-main window needs to be associated with the "view_id" returned somehow
-             ;;
-             ;; An application level (view_id: symbol -> Panel/window struct) hash map will be implemented.
-             ;; This map will have :
-             ;; - some writes in this callback, and
-             ;; - some reads in basically all back_end notifications callbacks
-             (refresh xile-main)))
-          (xile-rpc-send port-to-xi msg)))
+        ;; HACK open / manipulate file
+        (define first-buffer (make-buffer port-to-xi "README.org"))
+        ((first-buffer 'create-view))
+        ((first-buffer 'scroll) 0 (- (lines) 3))
+        )
 
-      (xile-rpc-send port-to-xi (xile-msg-edit-scroll "view-id-1" 0 (- (cols) 3)))
+
 
       ;; Main event loop
       (let loop ((ch (getch xile-main)))
