@@ -82,8 +82,7 @@
 
 ;; TODO : namespace should be a string or a symbol
 (define* (xile-msg-namespace-generic namespace method #:key (ns-param-alist '()))
-  (xile-msg-generic namespace #:msg-param-alist (acons 'method method ns-param-alist))
-      )
+  (xile-msg-generic namespace #:msg-param-alist (acons 'method method ns-param-alist)))
 
 (define* (xile-msg-init #:key (config_dir #f) (client_extras_dir #f))
   "client_started {\"config_dir\" \"some/path\"?, \"client_extras_dir\": \"some/other/path\"?}
@@ -96,12 +95,12 @@ additional resources, such as bundled plugins."
   (xile-notif-generic
    'client_started
    #:notif-param-alist (cond ((and config_dir client_extras_dir)
-                             `((config_dir . ,config_dir) (client_extras_dir . ,client_extras_dir)))
-                            (config_dir
-                             `((config_dir . ,config_dir)))
-                            (client_extras_dir
-                             `((client_extras_dir . ,client_extras_dir)))
-                            (else '()))))
+                              `((config_dir . ,config_dir) (client_extras_dir . ,client_extras_dir)))
+                             (config_dir
+                              `((config_dir . ,config_dir)))
+                             (client_extras_dir
+                              `((client_extras_dir . ,client_extras_dir)))
+                             (else '()))))
 
 (define* (xile-msg-new_view #:key (file_path #f))
   "new_view { \"file_path\": \"path.md\"? } -> \"view-id-1\"

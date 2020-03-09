@@ -30,8 +30,8 @@
 
 (define (update-header header-win text)
   ;; TODO Make the refresh optional
-      (addstr header-win text #:y 0 #:x 10)
-      (refresh header-win))
+  (addstr header-win text #:y 0 #:x 10)
+  (refresh header-win))
 
 (define (update-footer footer-win text)
   ;; TODO Make the refresh optional
