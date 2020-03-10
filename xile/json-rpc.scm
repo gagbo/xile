@@ -15,13 +15,15 @@
 
 (install-suspendable-ports!)
 
-(define (xile-setup)
+(define* (xile-setup #:optional (xi-path "xi-editor/rust/target/release/xi-core"))
   "Setup Xi process with pipes and listener thread.
+XI-PATH is an optional path to xi-core executable, and defaults to the xi-core
+built in the submodule of the repository
 Return a list :
 - car : listener thread
 - cdar : input-port with communication from Xi process
 - cddar : output-port with communication to Xi process"
-  (let* ((xi-proc (xile-open "xi-editor/rust/target/release/xi-core"))
+  (let* ((xi-proc (xile-open xi-path))
          (port-from-xi (car xi-proc))
          (port-to-xi (cdr xi-proc))
          (listener (xile-listener-thread xile-rpc-handler port-from-xi)))
