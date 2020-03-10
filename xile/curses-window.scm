@@ -79,8 +79,9 @@
         (hashq-ref id-to-buffer view_id))))
 
   (set! make-xile-buffer
-    (lambda* (port-to-xi #:optional file_path)
+    (lambda* (port-to-xi send-mutex #:optional file_path)
       "Create a buffer with PORT-TO-XI used to send messages to xi-core process.
+SEND-MUTEX protects access to PORT-TO-XI
 
 Optional FILE_PATH can be given to set the view to point to a file.
 
@@ -95,6 +96,7 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
             (bufwin (make-xile-main))   ; The associated ncurses window/panel
             (file_path file_path)
             (to-xi port-to-xi)
+            (to-xi-guard send-mutex)
             (bufwin-guard (make-mutex)))
 
         (define dispatch #f)          ; dispatch acts as "this" in OOP-languages
@@ -116,12 +118,12 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
                (signal-condition-variable wait-for-id)))
             ;; HACK : using a condvar here means we need to lock/unlock a mutex.
             ;; Seems weird
-            (xile-rpc-send to-xi msg)
+            (xile-rpc-send to-xi to-xi-guard msg)
             (with-mutex id-to-buffer-guard
               (wait-condition-variable wait-for-id id-to-buffer-guard))))
 
         (define (scroll min-line max-line)
-          (xile-rpc-send to-xi (xile-msg-edit-scroll view_id min-line max-line)))
+          (xile-rpc-send to-xi to-xi-guard (xile-msg-edit-scroll view_id min-line max-line)))
 
         (define (cb-scroll-to y x)
           (with-mutex bufwin-guard

@@ -13,7 +13,9 @@
   ;; This let initializes resources
   (let* ((xi-setup (xile-setup))
          (port-from-xi (cadr xi-setup))
-         (port-to-xi (cddr xi-setup))
+         (recv-mutex (caddr xi-setup))
+         (port-to-xi (cadddr xi-setup))
+         (send-mutex (cddddr xi-setup))
          (listener (car xi-setup))
          (stdscr (initscr)))
 
@@ -41,7 +43,7 @@
       (set-current-output-port (open "logs/xile-out.log" (logior O_APPEND O_CREAT O_WRONLY)))
 
       ;; Xi init code
-      (xile-rpc-send port-to-xi (xile-msg-init))
+      (xile-rpc-send port-to-xi send-mutex (xile-msg-init))
 
       (begin
         ;; HACK register notification callback
@@ -94,10 +96,9 @@
            (format #t "available_languages unimplemented !~%")))
 
         ;; HACK open / manipulate file
-        (define first-buffer (make-xile-buffer port-to-xi "README.org"))
+        (define first-buffer (make-xile-buffer port-to-xi send-mutex "README.org"))
         ((first-buffer 'create-view))
-        ((first-buffer 'scroll) 0 (- (lines) 3))
-        )
+        ((first-buffer 'scroll) 0 (- (lines) 3)))
 
 
 
@@ -115,6 +116,8 @@
 
     ;; Closing code (give back resources)
     (join-thread listener (current-time))
-    (close-port port-to-xi)
-    (close-port port-from-xi)
+    (with-mutex send-mutex
+      (close-port port-to-xi))
+    (with-mutex recv-mutex
+      (close-port port-from-xi))
     (endwin)))

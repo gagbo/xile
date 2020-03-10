@@ -21,13 +21,15 @@ XI-PATH is an optional path to xi-core executable, and defaults to the xi-core
 built in the submodule of the repository
 Return a list :
 - car : listener thread
-- cdar : input-port with communication from Xi process
-- cddar : output-port with communication to Xi process"
+- cadr : input-port with communication from Xi process
+- caddr : mutex for input-port
+- cadddr : output-port with communication to Xi process
+- cddddr : mutex for output-port"
   (let* ((xi-proc (xile-open xi-path))
          (port-from-xi (car xi-proc))
          (port-to-xi (cdr xi-proc))
          (listener (xile-listener-thread xile-rpc-handler port-from-xi)))
-    (cons listener (cons port-from-xi port-to-xi))))
+    (cons* listener port-from-xi (make-mutex) port-to-xi (make-mutex))))
 
 ;; Debugging / Logging
 (define (xile-debug severity message)
@@ -87,14 +89,16 @@ Return a pair (input-port . output-port) for pipe communication with xi-core pro
       (id-to-callback (make-hash-table 31))
       (notification-to-callback (make-hash-table 31)))
 
-  (set! xile-rpc-send (lambda (port message)
+  (set! xile-rpc-send (lambda (port mutex message)
                         "Send a MESSAGE for Xi process using PORT.
+PORT is protected by MUTEX
 MESSAGE must be a pair (id . actual-message) to help return value.
 Return the id of the message sent if it was a message, or #f for a notification."
                         (let ((actual-message (cdr message))
                               (id (car message)))
                           (xile-debug-info (string-append "Sending : " actual-message))
-                          (write-line actual-message port)
+                          (with-mutex mutex
+                            (write-line actual-message port))
                           id)))
 
   (set! xile-register-callback (lambda (message-type handler-proc)
