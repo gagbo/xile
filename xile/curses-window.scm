@@ -6,6 +6,7 @@
   #:use-module (ncurses curses)
   #:use-module (ice-9 futures)
   #:use-module (ice-9 threads)
+  #:use-module (srfi srfi-9)
   #:export (make-xile-buffer
             find-xile-buffer
             make-xile-footer
@@ -13,7 +14,14 @@
             clear-footer-text
             make-xile-header
             update-header
-            make-xile-main))
+            make-xile-main
+            xile-buffer-info?
+            xile-buffer-info-view_id
+            set-xile-buffer-info-view_id
+            xile-buffer-info-file_path
+            set-xile-buffer-info-file_path
+            xile-buffer-info-bufwin
+            set-xile-buffer-info-bufwin))
 
 (define (make-xile-header)
   (let* ((height 1)
@@ -65,6 +73,13 @@
          (starty 1))
     (newwin height width starty startx)))
 
+(define-record-type <xile-buffer-info>
+  (make-xile-buffer-info view_id file_path bufwin)
+  xile-buffer-info?
+  (view_id xile-buffer-info-view_id set-xile-buffer-info-view_id)
+  (file_path xile-buffer-info-file_path set-xile-buffer-info-file_path)
+  (bufwin xile-buffer-info-bufwin set-xile-buffer-info-bufwin))
+
 (define make-xile-buffer #f)
 (define find-xile-buffer #f)
 
@@ -92,12 +107,13 @@ The dispatching of the returned lambda can be checked in source code.
 
 Opening multiple buffers pointing to the same FILE_PATH is undefined behaviour,
 as of 2020-03-09, xi doesn't handle multiple views of a single file."
-      (let ((view_id #f)                ; The internal identifier for xi
-            (bufwin (make-xile-main))   ; The associated ncurses window/panel
-            (file_path file_path)
-            (to-xi port-to-xi)
-            (to-xi-guard send-mutex)
-            (bufwin-guard (make-mutex)))
+      (let* ((view_id #f)               ; The internal identifier for xi
+             (bufwin (make-xile-main))  ; The associated ncurses window/panel
+             (file_path file_path)
+             (info (make-xile-buffer-info view_id file_path bufwin))
+             (to-xi port-to-xi)
+             (to-xi-guard send-mutex)
+             (bufwin-guard (make-mutex)))
 
         (define dispatch #f)          ; dispatch acts as "this" in OOP-languages
 
@@ -141,9 +157,8 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
 
         (set! dispatch
           (lambda (m)
-            (cond ((eq? m 'get-view_id) view_id)
-                  ((eq? m 'get-win) bufwin)
-                  ((eq? m 'get-file_path) file_path)
+            (cond ((eq? m 'get-info) info)
+                  ((eq? m 'get-win) (xile-buffer-info-bufwin info))
                   ((eq? m 'create-view) create-view)
                   ((eq? m 'scroll) scroll)
                   ((eq? m 'cb-scroll-to) cb-scroll-to)
