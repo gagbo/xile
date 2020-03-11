@@ -74,11 +74,13 @@
     (newwin height width starty startx)))
 
 (define-record-type <xile-buffer-info>
-  (make-xile-buffer-info view_id file_path bufwin)
+  (make-xile-buffer-info view_id file_path bufwin pristine)
   xile-buffer-info?
   (view_id xile-buffer-info-view_id set-xile-buffer-info-view_id)
   (file_path xile-buffer-info-file_path set-xile-buffer-info-file_path)
-  (bufwin xile-buffer-info-bufwin set-xile-buffer-info-bufwin))
+  (bufwin xile-buffer-info-bufwin set-xile-buffer-info-bufwin)
+  (pristine xile-buffer-info-pristine set-xile-buffer-info-pristine)
+  )
 
 (define make-xile-buffer #f)
 (define find-xile-buffer #f)
@@ -110,7 +112,8 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
       (let* ((view_id #f)               ; The internal identifier for xi
              (bufwin (make-xile-main))  ; The associated ncurses window/panel
              (file_path file_path)
-             (info (make-xile-buffer-info view_id file_path bufwin))
+             (pristine #t)
+             (info (make-xile-buffer-info view_id file_path bufwin pristine))
              (to-xi port-to-xi)
              (to-xi-guard send-mutex)
              (bufwin-guard (make-mutex)))
