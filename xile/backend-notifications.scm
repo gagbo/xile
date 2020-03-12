@@ -1,8 +1,90 @@
 ;; coding: utf-8
 
 (define-module (xile backend-notifications)
+  #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-9)
-  )
+  #:use-module (srfi srfi-43)
+  #:export (parse-xi-update
+            xi-op?
+            xi-op-type
+            xi-op-count
+            xi-op-lines
+            xi-op-ln
+            xi-line?
+            xi-line-text
+            xi-line-ln
+            xi-line-cursor
+            xi-line-styles
+            xi-update?
+            xi-update-rev
+            xi-update-ops
+            xi-update-view_id
+            xi-update-pristine
+            xi-update-annotations))
+
+(define-record-type <xi-op>
+  (make-xi-op type count lines ln)
+  xi-op?
+  (type xi-op-type)
+  (count xi-op-count)
+  (lines xi-op-lines)
+  (ln xi-op-ln))
+
+(define-record-type <xi-line>
+  (make-xi-line text ln cursor styles)
+  xi-line?
+  (text xi-line-text)
+  (ln xi-line-ln)
+  (cursor xi-line-cursor)
+  (styles xi-line-styles))
+
+(define-record-type <xi-annotation-slice>
+  (make-xi-annotation-slice type ranges payloads count-ranges)
+  xi-annotation-slice?
+  (type xi-annotation-slice-type)
+  (ranges xi-annotation-slice-ranges)
+  (payloads xi-annotation-slice-payloads)
+  (count-ranges xi-annotation-slice-count-ranges))
+
+(define-record-type <xi-annotation-range>
+  (make-xi-annotation-range start_line start_col end_line end_col)
+  xi-annotation-range?
+  (start_line xi-annotation-range-start_line)
+  (start_col xi-annotation-range-start_col)
+  (end_line xi-annotation-range-end_line)
+  (end_col xi-annotation-range-end_col))
+
+(define-record-type <xi-update>
+  (make-xi-update rev ops view_id pristine annotations)
+  xi-update?
+  (rev xi-update-rev)
+  (ops xi-update-ops)
+  (view_id xi-update-view_id)
+  (pristine xi-update-pristine)
+  (annotations xi-update-annotations))
+
+(define (parse-xi-line line)
+  (let ((text (assoc-ref line "text"))
+        (ln (assoc-ref line "ln"))
+        (cursor (assoc-ref line "cursor"))
+        (styles (assoc-ref line "styles")))
+    (make-xi-line text ln cursor styles)))
+
+(define (parse-xi-op op)
+  (let ((type (string->symbol (assoc-ref op "op")))
+        (count (assoc-ref op "n"))
+        (lines (and=> (assoc-ref op "lines") (lambda (vec) (vector-map (lambda (i line) (parse-xi-line line)) vec))))
+        (ln (assoc-ref op "ln")))
+    (make-xi-op type count lines ln)))
+
+(define (parse-xi-update result)
+  (let ((view_id (assoc-ref result "view_id"))
+        (update-alist (assoc-ref result "update")))
+    (let ((ops (and=> (assoc-ref update-alist "ops") (lambda (vec) (vector-map (lambda (i op) (parse-xi-op op)) vec))))
+          (rev (assoc-ref update-alist "rev"))
+          (pristine (assoc-ref update-alist "pristine"))
+          (annotations #f))
+      (make-xi-update rev ops view_id pristine annotations))))
 
 ;; update
 ;; rev?: number

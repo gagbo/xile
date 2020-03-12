@@ -6,7 +6,8 @@
              (ice-9 threads) ;; For the join-thread in main
              (xile message)
              (xile json-rpc)
-             (xile curses-window))
+             (xile curses-window)
+             (xile backend-notifications))
 
 ;; Main
 (define (main args)
@@ -56,7 +57,7 @@
                   (xile-buffer (find-xile-buffer (string->symbol view_id))))
              (format #t "Update : xile-buffer for ~a is ~a~%" view_id xile-buffer)
              (when xile-buffer
-               ((xile-buffer 'cb-update) result)))))
+               ((xile-buffer 'cb-update) (parse-xi-update result))))))
 
         (xile-register-callback
          'scroll_to

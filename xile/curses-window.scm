@@ -3,6 +3,7 @@
 (define-module (xile curses-window)
   #:use-module (xile message)
   #:use-module (xile json-rpc)
+  #:use-module (xile backend-notifications)
   #:use-module (ncurses curses)
   #:use-module (ice-9 futures)
   #:use-module (ice-9 threads)
@@ -79,8 +80,7 @@
   (view_id xile-buffer-info-view_id set-xile-buffer-info-view_id)
   (file_path xile-buffer-info-file_path set-xile-buffer-info-file_path)
   (bufwin xile-buffer-info-bufwin set-xile-buffer-info-bufwin)
-  (pristine xile-buffer-info-pristine set-xile-buffer-info-pristine)
-  )
+  (pristine xile-buffer-info-pristine set-xile-buffer-info-pristine))
 
 (define make-xile-buffer #f)
 (define find-xile-buffer #f)
@@ -154,7 +154,7 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
           ;; from the first line of updates.
           (with-mutex bufwin-guard
             (addstr bufwin
-                    (format #f "~a" (assoc-ref (vector-ref (assoc-ref (vector-ref (assoc-ref (assoc-ref result "update") "ops") 0) "lines") 0) "text"))
+                    (format #f "~a" (xi-line-text (vector-ref (xi-op-lines (vector-ref (xi-update-ops result) 0)) 0)))
                     #:y 0 #:x 0)
             (refresh bufwin)))
 
