@@ -76,14 +76,15 @@
     (newwin height width starty startx)))
 
 (define-record-type <xile-buffer-info>
-  (make-xile-buffer-info view_id file_path bufwin pristine lines index)
+  (make-xile-buffer-info view_id file_path bufwin pristine lines index cursor)
   xile-buffer-info?
   (view_id xile-buffer-info-view_id set-xile-buffer-info-view_id)
   (file_path xile-buffer-info-file_path set-xile-buffer-info-file_path)
   (bufwin xile-buffer-info-bufwin set-xile-buffer-info-bufwin)
   (pristine xile-buffer-info-pristine set-xile-buffer-info-pristine)
   (lines xile-buffer-info-lines set-xile-buffer-info-lines)
-  (index xile-buffer-info-index set-xile-buffer-info-index))
+  (index xile-buffer-info-index set-xile-buffer-info-index)
+  (cursor xile-buffer-info-cursor set-xile-buffer-info-cursor))
 
 (define make-xile-buffer #f)
 (define find-xile-buffer #f)
@@ -112,7 +113,7 @@ The dispatching of the returned lambda can be checked in source code.
 
 Opening multiple buffers pointing to the same FILE_PATH is undefined behaviour,
 as of 2020-03-09, xi doesn't handle multiple views of a single file."
-      (let* ((info (make-xile-buffer-info #f file_path (make-xile-main) #t #() 0))
+      (let* ((info (make-xile-buffer-info #f file_path (make-xile-main) #t #() 0 #f))
              (to-xi port-to-xi)
              (to-xi-guard send-mutex)
              (bufwin-guard (make-mutex)))
@@ -146,10 +147,22 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
 
         (define (draw-buffer)
           (with-mutex bufwin-guard
-            (addstr (xile-buffer-info-bufwin info)
-                    (format #f "~a" (xi-line-text (vector-ref (xile-buffer-info-lines info) 0)))
-                    #:y 0 #:x 0)
-            (refresh (xile-buffer-info-bufwin info))))
+          (let ((index (xile-buffer-info-index info))
+                (window-lines (getmaxy (xile-buffer-info-bufwin info))))
+            (vector-for-each
+             (lambda (i line)
+               (when (and (>= i index) (< i (+ index window-lines)))
+                 (addstr (xile-buffer-info-bufwin info)
+                         (format #f "~a" (xi-line-text line))
+                         #:y (- i index) #:x 0)))
+             (xile-buffer-info-lines info))
+
+            (when (xile-buffer-info-cursor info)
+              (move (xile-buffer-info-bufwin info)
+                    (car (xile-buffer-info-cursor info))
+                    (cadr (xile-buffer-info-cursor info))))
+
+            (refresh (xile-buffer-info-bufwin info)))))
 
         (define (cb-scroll-to y x)
           (with-mutex bufwin-guard
@@ -172,6 +185,17 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
             (define new_lines (make-vector (+ count old_lines_len)))
             (vector-copy! new_lines 0 old_lines)
             (vector-copy! new_lines old_lines_len ins_lines)
+
+            ;; HACK : Catching the cursors in the update message
+            ;; Using vector-map as we assume there's only one cursor
+            ;; (order of evaluation is unspecified)
+            (vector-map
+             (lambda (i line)
+               (when (and (xi-line-cursor line) (xi-line-ln line))
+                 (let ((cursor-line (- (xi-line-ln line) 1))
+                       (cursor-col (vector-ref (xi-line-cursor line) 0)))
+                   (set-xile-buffer-info-cursor info (list cursor-line cursor-col)))))
+             new_lines)
 
             (set-xile-buffer-info-lines info new_lines))
           )
