@@ -8,6 +8,7 @@
   #:use-module (ice-9 futures)
   #:use-module (ice-9 threads)
   #:use-module (srfi srfi-9)
+  #:use-module (srfi srfi-43)
   #:export (make-xile-buffer
             find-xile-buffer
             make-xile-footer
@@ -75,12 +76,14 @@
     (newwin height width starty startx)))
 
 (define-record-type <xile-buffer-info>
-  (make-xile-buffer-info view_id file_path bufwin pristine)
+  (make-xile-buffer-info view_id file_path bufwin pristine lines index)
   xile-buffer-info?
   (view_id xile-buffer-info-view_id set-xile-buffer-info-view_id)
   (file_path xile-buffer-info-file_path set-xile-buffer-info-file_path)
   (bufwin xile-buffer-info-bufwin set-xile-buffer-info-bufwin)
-  (pristine xile-buffer-info-pristine set-xile-buffer-info-pristine))
+  (pristine xile-buffer-info-pristine set-xile-buffer-info-pristine)
+  (lines xile-buffer-info-lines set-xile-buffer-info-lines)
+  (index xile-buffer-info-index set-xile-buffer-info-index))
 
 (define make-xile-buffer #f)
 (define find-xile-buffer #f)
@@ -113,7 +116,9 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
              (bufwin (make-xile-main))  ; The associated ncurses window/panel
              (file_path file_path)
              (pristine #t)
-             (info (make-xile-buffer-info view_id file_path bufwin pristine))
+             (lines #())
+             (index 0)
+             (info (make-xile-buffer-info view_id file_path bufwin pristine lines index))
              (to-xi port-to-xi)
              (to-xi-guard send-mutex)
              (bufwin-guard (make-mutex)))
@@ -144,6 +149,13 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
         (define (scroll min-line max-line)
           (xile-rpc-send to-xi to-xi-guard (xile-msg-edit-scroll view_id min-line max-line)))
 
+        (define (draw-buffer)
+          (with-mutex bufwin-guard
+            (addstr bufwin
+                    (format #f "~a" (xi-line-text (vector-ref (xile-buffer-info-lines info) 0)))
+                    #:y 0 #:x 0)
+            (refresh bufwin)))
+
         (define (cb-scroll-to y x)
           (with-mutex bufwin-guard
             (move bufwin y x)
@@ -152,11 +164,60 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
         (define (cb-update result)
           ;; The "update" callback here is just badly extracting the text
           ;; from the first line of updates.
-          (with-mutex bufwin-guard
-            (addstr bufwin
-                    (format #f "~a" (xi-line-text (vector-ref (xi-op-lines (vector-ref (xi-update-ops result) 0)) 0)))
-                    #:y 0 #:x 0)
-            (refresh bufwin)))
+          (set-xile-buffer-info-pristine info (xi-update-pristine result))
+          (and=> (xi-update-ops result) (lambda (vec) (vector-for-each (lambda (i op) (handle-update-op op)) vec)))
+          (draw-buffer))
+
+        (define (handle-update-op-ins op)
+          (let* ((count (xi-op-count op))
+                 (old_lines (xile-buffer-info-lines info))
+                 (old_lines_len (vector-length old_lines))
+                 (ins_lines (xi-op-lines op)))
+            (define new_lines (make-vector (+ count old_lines_len)))
+
+            (vector-for-each
+             (lambda (i line)
+               (if (< i old_lines_len)
+                   (vector-set! new_lines i (vector-ref old_lines i))
+                   (vector-set! new_lines i (vector-ref ins_lines (- i old_lines_len)))))
+             new_lines)
+
+            (set-xile-buffer-info-lines info new_lines))
+          )
+
+        (define (handle-update-op-copy op)
+          #f)
+
+        (define (handle-update-op-skip op)
+          (let ((old_ix (xile-buffer-info-index info))
+                (count (xi-op-count op)))
+            (set-xile-buffer-info-index info (+ old_ix count))))
+
+        (define (handle-update-op-invalidate op)
+          ;; Use (set-xi-line-valid line #f) or (make-xi-line #f #f #f #f #f)
+          ;; (xi-op-count op) times
+          #f)
+
+        (define (handle-update-op-update op)
+          ;; Not handled by protocol yet
+          (let ((old_ix (xile-buffer-info-index info))
+                (count (xi-op-count op)))
+            (set-xile-buffer-info-index info (+ old_ix count))))
+
+
+        (define (handle-update-op op)
+          (let ((type (xi-op-type op)))
+            (cond ((eq? type 'ins)
+                   (handle-update-op-ins op))
+                  ((eq? type 'copy)
+                   (handle-update-op-copy op))
+                  ((eq? type 'skip)
+                   (handle-update-op-skip op))
+                  ((eq? type 'invalidate)
+                   (handle-update-op-invalidate op))
+                  ((eq? type 'update)
+                   (handle-update-op-update op))
+                  (else (format (current-error-port) "Unknown update type : ~a~%" type)))))
 
         (set! dispatch
           (lambda (m)

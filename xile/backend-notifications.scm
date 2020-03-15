@@ -15,6 +15,8 @@
             xi-line-ln
             xi-line-cursor
             xi-line-styles
+            xi-line-valid
+            set-xi-line-valid
             xi-update?
             xi-update-rev
             xi-update-ops
@@ -31,12 +33,13 @@
   (ln xi-op-ln))
 
 (define-record-type <xi-line>
-  (make-xi-line text ln cursor styles)
+  (make-xi-line text ln cursor styles valid)
   xi-line?
   (text xi-line-text)
   (ln xi-line-ln)
   (cursor xi-line-cursor)
-  (styles xi-line-styles))
+  (styles xi-line-styles)
+  (valid xi-line-valid set-xi-line-valid))
 
 (define-record-type <xi-annotation-slice>
   (make-xi-annotation-slice type ranges payloads count-ranges)
@@ -68,7 +71,7 @@
         (ln (assoc-ref line "ln"))
         (cursor (assoc-ref line "cursor"))
         (styles (assoc-ref line "styles")))
-    (make-xi-line text ln cursor styles)))
+    (make-xi-line text ln cursor styles #t)))
 
 (define (parse-xi-op op)
   (let ((type (string->symbol (assoc-ref op "op")))
