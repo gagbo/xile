@@ -4,18 +4,60 @@ Let's find out if Guile goes with everything ; and make a front-end for Xi
 Editor using GNU Guile and libraries.
 
 * Table of Contents :TOC_3:noexport:
+- [[#quickstart][Quickstart]]
+  - [[#compile-xi-editor][Compile Xi editor]]
+  - [[#start][Start]]
+  - [[#test-script][Test script]]
+  - [[#stop][Stop]]
 - [[#dependencies][Dependencies]]
+- [[#roadmap][Roadmap]]
 - [[#objectives][Objectives]]
+
+* Quickstart
+
+** Compile Xi editor
+Update the submodule and =cargo build --release= the bundled [[https://github.com/xi-editor/xi-editor][Xi editor]]
+
+** Start
+If you have a working guile with =guile-ncurses= support and =guile-json-scm=
+support, it is as simple as
+#+BEGIN_SRC bash
+./xile.scm
+#+END_SRC
+
+** Test script
+For the time being we are just opening this README file to see how it's
+displayed.
+
+All the logs are located in the [[./logs][logs]] folder after the run :
+- xi-core.log :: hold the logs from Xi editor process
+- xile-listen-{out,err}.log :: hold the logs from xile functions regarding
+  callbacks and Xi message parsing
+- xile-{out,err}.log :: hold the logs from xile functions outside message
+  callbacks
+
+** Stop
+Hit =q= to stop Xile.
 
 * Dependencies
 
 I target Guile 3.0 with this little endeavour. The [[./guix_deps][Guix Deps]] directory contains
-package definitions for the dependencies which are not yet in guix packages.
+package definitions for the dependencies which are not yet in guix packages. The
+only dependency currently needed which is not in guix packages is the guile3.0
+version of ncurses library.
+
+* Roadmap
+- [ ] Move cursor
+- [ ] Scroll window
+- [ ] Proper header/footer
+- [ ] Edit file
+- [ ] Syntax Highlighting (using xi-core bundled syntect)
+- [ ] Editor states (command and insert at least)
 
 * Objectives
 
 - Learn about using a lisp in a complex project
-- Play with SDL2 a little bit
+- Play with ncurses interfaces
+- Play with SDL2 a little bit (Postponed until I can get a proper ncurses interface)
 - See how difficult it is to build software with a json interface to a provider
-  (here we are using [[https://github.com/xi-editor/xi-editor][Xi Editor]] as the core text editor)
-
+  (here we are using [[https://github.com/xi-editor/xi-editor][Xi Editor]] as the core text editor).
