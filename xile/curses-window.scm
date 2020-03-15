@@ -112,13 +112,7 @@ The dispatching of the returned lambda can be checked in source code.
 
 Opening multiple buffers pointing to the same FILE_PATH is undefined behaviour,
 as of 2020-03-09, xi doesn't handle multiple views of a single file."
-      (let* ((view_id #f)               ; The internal identifier for xi
-             (bufwin (make-xile-main))  ; The associated ncurses window/panel
-             (file_path file_path)
-             (pristine #t)
-             (lines #())
-             (index 0)
-             (info (make-xile-buffer-info view_id file_path bufwin pristine lines index))
+      (let* ((info (make-xile-buffer-info #f file_path (make-xile-main) #t #() 0))
              (to-xi port-to-xi)
              (to-xi-guard send-mutex)
              (bufwin-guard (make-mutex)))
@@ -126,7 +120,8 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
         (define dispatch #f)          ; dispatch acts as "this" in OOP-languages
 
         (define (create-view) ; "" Constructor "" => sends a "new_view" message and sets the attribute in the callback
-          (keypad! bufwin #t)
+          (keypad! (xile-buffer-info-bufwin info) #t)
+          (curs-set 1)
           (let ((msg (xile-msg-new_view #:file_path file_path))
                 (wait-for-id (make-condition-variable))
                 (guard-wait (make-mutex)))
@@ -134,11 +129,11 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
              (car msg)
              (lambda (result)
                (lock-mutex id-to-buffer-guard)
-               (when (and view_id (hashq-get-handle id-to-buffer view_id))
-                 hashq-remove! id-to-buffer view_id)
+               (when (and (xile-buffer-info-view_id info) (hashq-get-handle id-to-buffer (xile-buffer-info-view_id info)))
+                 hashq-remove! id-to-buffer (xile-buffer-info-view_id info))
                (hashq-set! id-to-buffer (string->symbol result) dispatch)
                (unlock-mutex id-to-buffer-guard)
-               (set! view_id result)
+               (set-xile-buffer-info-view_id info result)
                (signal-condition-variable wait-for-id)))
             ;; HACK : using a condvar here means we need to lock/unlock a mutex.
             ;; Seems weird
@@ -147,19 +142,19 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
               (wait-condition-variable wait-for-id id-to-buffer-guard))))
 
         (define (scroll min-line max-line)
-          (xile-rpc-send to-xi to-xi-guard (xile-msg-edit-scroll view_id min-line max-line)))
+          (xile-rpc-send to-xi to-xi-guard (xile-msg-edit-scroll (xile-buffer-info-view_id info) min-line max-line)))
 
         (define (draw-buffer)
           (with-mutex bufwin-guard
-            (addstr bufwin
+            (addstr (xile-buffer-info-bufwin info)
                     (format #f "~a" (xi-line-text (vector-ref (xile-buffer-info-lines info) 0)))
                     #:y 0 #:x 0)
-            (refresh bufwin)))
+            (refresh (xile-buffer-info-bufwin info))))
 
         (define (cb-scroll-to y x)
           (with-mutex bufwin-guard
-            (move bufwin y x)
-            (refresh bufwin)))
+            (move (xile-buffer-info-bufwin info) y x)
+            (refresh (xile-buffer-info-bufwin info))))
 
         (define (cb-update result)
           ;; The "update" callback here is just badly extracting the text
