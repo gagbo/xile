@@ -173,14 +173,10 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
                  (old_lines (xile-buffer-info-lines info))
                  (old_lines_len (vector-length old_lines))
                  (ins_lines (xi-op-lines op)))
-            (define new_lines (make-vector (+ count old_lines_len)))
 
-            (vector-for-each
-             (lambda (i line)
-               (if (< i old_lines_len)
-                   (vector-set! new_lines i (vector-ref old_lines i))
-                   (vector-set! new_lines i (vector-ref ins_lines (- i old_lines_len)))))
-             new_lines)
+            (define new_lines (make-vector (+ count old_lines_len)))
+            (vector-copy! new_lines 0 old_lines)
+            (vector-copy! new_lines old_lines_len ins_lines)
 
             (set-xile-buffer-info-lines info new_lines))
           )
