@@ -10,6 +10,7 @@
             xi-op-count
             xi-op-lines
             xi-op-ln
+            make-xi-line
             xi-line?
             xi-line-text
             xi-line-ln

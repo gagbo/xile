@@ -99,7 +99,7 @@
         ;; HACK open / manipulate file
         (define first-buffer (make-xile-buffer port-to-xi send-mutex "README.org"))
         ((first-buffer 'create-view))
-        ((first-buffer 'scroll) 0 (- (lines) 3)))
+        ((first-buffer 'scroll) 0 (getmaxy (first-buffer 'get-win))))
 
 
 
@@ -108,6 +108,16 @@
         (cond
          ((eqv? ch #\q)
           #f)
+         ((eqv? ch KEY_DOWN)
+          (first-buffer 'move_down)
+          (loop (getch (first-buffer 'get-win))))
+         ((eqv? ch KEY_UP)
+          (first-buffer 'move_up)
+          (loop (getch (first-buffer 'get-win))))
+         ((eqv? ch KEY_NPAGE)
+          ((first-buffer 'scroll) 30 (+ 30 (getmaxy (first-buffer 'get-win))))
+          (loop (getch (first-buffer 'get-win))))
+
 
          (else
           (clear-footer-text xile-footer)

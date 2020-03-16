@@ -67,22 +67,97 @@
   (move footer-win 1 0)
   (clrtobot footer-win)
   (refresh footer-win))
+
 (define (make-xile-main)
   ;; TODO : Get proper height/width params
+  ;; 2 is (getmaxy xile-footer-win) and 1 is (getmaxy xile-header-win)
+  ;; But HOW can I get these into scope properly for evaluation ?
   (let* ((height (- (lines) 2 1))
          (width 0)
          (startx 0)
          (starty 1))
     (newwin height width starty startx)))
 
+(define-record-type <xi-line-cache>
+  (make-xi-line-cache lines invalid_before invalid_after)
+  xi-line-cache?
+  (lines xi-line-cache-lines set-xi-line-cache-lines)
+  (invalid_before xi-line-cache-invalid_before set-xi-line-cache-invalid_before)
+  (invalid_after xi-line-cache-invalid_after set-xi-line-cache-invalid_after))
+
+(define (xi-line-cache-handle-update-update cache update)
+  (let ((inv-before (xi-line-cache-invalid_before cache))
+        (inv-after (xi-line-cache-invalid_after cache))
+        (old-lines (xi-line-cache-lines cache))
+        (count (xi-op-count update)))
+    (make-xi-line-cache old-lines inv-before inv-after)))
+
+(define (xi-line-cache-handle-update-copy cache update)
+  (let ((inv-before (xi-line-cache-invalid_before cache))
+        (inv-after (xi-line-cache-invalid_after cache))
+        (old-lines (xi-line-cache-lines cache))
+        (count (xi-op-count update)))
+
+    (cond
+     ((> inv-before count)
+      (let ((new-lines (make-vector (vector-length old-lines))))
+        (vector-copy! new-lines 0 old-lines count)
+        (make-xi-line-cache
+         new-lines (- inv-before count) (max count (- inv-after count)))))
+     (else
+      (let* ((truncated-count (- count inv-before))
+             (truncated-inv-after (max (- inv-after truncated-count) 0))
+             (new-lines (make-vector (+ truncated-inv-after truncated-count))))
+        (vector-copy! new-lines truncated-inv-after old-lines inv-before (+ inv-before truncated-count))
+        (vector-copy! new-lines 0 old-lines truncated-count (+ truncated-count truncated-inv-after))
+        (make-xi-line-cache new-lines 0 (+ truncated-inv-after truncated-count)))))))
+
+(define (xi-line-cache-handle-update-skip cache update)
+  (let ((inv-before (xi-line-cache-invalid_before cache))
+        (inv-after (xi-line-cache-invalid_after cache))
+        (old-lines (xi-line-cache-lines cache))
+        (count (xi-op-count update)))
+
+    (define new-lines (vector-copy old-lines count))
+    (let ((new_inv-before (if (>= inv-before count)
+                              (- inv-before count)
+                              0)))
+      (make-xi-line-cache new-lines new_inv-before (- inv-after count)))))
+
+(define (xi-line-cache-handle-update-invalidate cache update)
+  (let ((inv-before (xi-line-cache-invalid_before cache))
+        (inv-after (xi-line-cache-invalid_after cache))
+        (old-lines (xi-line-cache-lines cache))
+        (count (xi-op-count update)))
+
+    (define new-lines (make-vector (+ (vector-length old-lines) count)))
+    (vector-copy! new-lines 0 old-lines)
+
+    (if (equal? (vector-length old-lines) 0)
+        (make-xi-line-cache new-lines (+ inv-before count) inv-after)
+        (make-xi-line-cache new-lines inv-before inv-after))))
+
+(define (xi-line-cache-handle-update-ins cache update)
+  (let ((inv-before (xi-line-cache-invalid_before cache))
+        (inv-after (xi-line-cache-invalid_after cache))
+        (old-lines (xi-line-cache-lines cache))
+        (count (xi-op-count update))
+        (ins-lines (xi-op-lines update)))
+
+    (define new-lines (make-vector (+ inv-after (vector-length ins-lines))))
+    (vector-copy! new-lines 0 old-lines 0 inv-after)
+    (vector-copy! new-lines inv-after ins-lines)
+
+    (make-xi-line-cache new-lines inv-before (vector-length new-lines))))
+
 (define-record-type <xile-buffer-info>
-  (make-xile-buffer-info view_id file_path bufwin pristine lines index cursor)
+  (make-xile-buffer-info view_id file_path bufwin pristine line_cache index cursor)
   xile-buffer-info?
   (view_id xile-buffer-info-view_id set-xile-buffer-info-view_id)
   (file_path xile-buffer-info-file_path set-xile-buffer-info-file_path)
   (bufwin xile-buffer-info-bufwin set-xile-buffer-info-bufwin)
   (pristine xile-buffer-info-pristine set-xile-buffer-info-pristine)
-  (lines xile-buffer-info-lines set-xile-buffer-info-lines)
+  (line_cache xile-buffer-info-line_cache set-xile-buffer-info-line_cache)
   (index xile-buffer-info-index set-xile-buffer-info-index)
   (cursor xile-buffer-info-cursor set-xile-buffer-info-cursor))
 
@@ -113,12 +188,28 @@ The dispatching of the returned lambda can be checked in source code.
 
 Opening multiple buffers pointing to the same FILE_PATH is undefined behaviour,
 as of 2020-03-09, xi doesn't handle multiple views of a single file."
-      (let* ((info (make-xile-buffer-info #f file_path (make-xile-main) #t #() 0 #f))
+      (let* ((info (make-xile-buffer-info
+                    #f file_path (make-xile-main) #t (make-xi-line-cache #() 0 0) 0 #f))
              (to-xi port-to-xi)
              (to-xi-guard send-mutex)
-             (bufwin-guard (make-mutex)))
+             (bufwin-guard (make-mutex))
+             (info-guard (make-mutex)))
 
         (define dispatch #f)          ; dispatch acts as "this" in OOP-languages
+
+        ;; TODO : Refactor the notification sending out of buffer.
+        ;; This is the most stateless part we can start with.
+        (define (rpc-send-notif notif)
+          (xile-rpc-send to-xi to-xi-guard notif))
+
+        (define (scroll min-line max-line)
+          (rpc-send-notif (xile-msg-edit-scroll (xile-buffer-info-view_id info) min-line max-line)))
+
+        (define (move_down)
+          (rpc-send-notif (xile-msg-edit-move_down (xile-buffer-info-view_id info))))
+
+        (define (move_up)
+          (rpc-send-notif (xile-msg-edit-move_up (xile-buffer-info-view_id info))))
 
         (define (create-view) ; "" Constructor "" => sends a "new_view" message and sets the attribute in the callback
           (keypad! (xile-buffer-info-bufwin info) #t)
@@ -142,27 +233,30 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
             (with-mutex id-to-buffer-guard
               (wait-condition-variable wait-for-id id-to-buffer-guard))))
 
-        (define (scroll min-line max-line)
-          (xile-rpc-send to-xi to-xi-guard (xile-msg-edit-scroll (xile-buffer-info-view_id info) min-line max-line)))
-
         (define (draw-buffer)
           (with-mutex bufwin-guard
-          (let ((index (xile-buffer-info-index info))
-                (window-lines (getmaxy (xile-buffer-info-bufwin info))))
-            (vector-for-each
-             (lambda (i line)
-               (when (and (>= i index) (< i (+ index window-lines)))
-                 (addstr (xile-buffer-info-bufwin info)
-                         (format #f "~a" (xi-line-text line))
-                         #:y (- i index) #:x 0)))
-             (xile-buffer-info-lines info))
+            (let* ((index (xile-buffer-info-index info))
+                  (cache (xile-buffer-info-line_cache info))
+                  (inv-before (xi-line-cache-invalid_before cache))
+                  (inv-after (xi-line-cache-invalid_after cache))
+                  (window-lines (getmaxy (xile-buffer-info-bufwin info))))
+              (format (current-output-port) "Drawing between ~a and ~a~%" inv-before inv-after)
+              (begin
+                (vector-for-each
+                 (lambda (i line)
+                   (when (and (>= i inv-before) (< i inv-after))
+                     (if (xi-line-valid line)
+                         (addstr (xile-buffer-info-bufwin info)
+                                 (format #f "~a" (xi-line-text line))
+                                 #:y (- i index) #:x 0))))
+                 (xi-line-cache-lines (xile-buffer-info-line_cache info)))
 
-            (when (xile-buffer-info-cursor info)
-              (move (xile-buffer-info-bufwin info)
-                    (car (xile-buffer-info-cursor info))
-                    (cadr (xile-buffer-info-cursor info))))
+                (when (xile-buffer-info-cursor info)
+                  (move (xile-buffer-info-bufwin info)
+                        (car (xile-buffer-info-cursor info))
+                        (cadr (xile-buffer-info-cursor info)))))
 
-            (refresh (xile-buffer-info-bufwin info)))))
+              (refresh (xile-buffer-info-bufwin info)))))
 
         (define (cb-scroll-to y x)
           (with-mutex bufwin-guard
@@ -172,67 +266,42 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
         (define (cb-update result)
           ;; The "update" callback here is just badly extracting the text
           ;; from the first line of updates.
-          (set-xile-buffer-info-pristine info (xi-update-pristine result))
-          (and=> (xi-update-ops result) (lambda (vec) (vector-for-each (lambda (i op) (handle-update-op op)) vec)))
+          (with-mutex info-guard
+            (set-xile-buffer-info-pristine info (xi-update-pristine result))
+            (and=>
+             (xi-update-ops result)
+             (lambda (vec)
+               (vector-for-each
+                (lambda (i op)
+                  (handle-update-op op))
+                vec))))
           (draw-buffer))
 
-        (define (handle-update-op-ins op)
-          (let* ((count (xi-op-count op))
-                 (old_lines (xile-buffer-info-lines info))
-                 (old_lines_len (vector-length old_lines))
-                 (ins_lines (xi-op-lines op)))
-
-            (define new_lines (make-vector (+ count old_lines_len)))
-            (vector-copy! new_lines 0 old_lines)
-            (vector-copy! new_lines old_lines_len ins_lines)
-
-            ;; HACK : Catching the cursors in the update message
-            ;; Using vector-map as we assume there's only one cursor
-            ;; (order of evaluation is unspecified)
-            (vector-map
-             (lambda (i line)
-               (when (and (xi-line-cursor line) (xi-line-ln line))
-                 (let ((cursor-line (- (xi-line-ln line) 1))
-                       (cursor-col (vector-ref (xi-line-cursor line) 0)))
-                   (set-xile-buffer-info-cursor info (list cursor-line cursor-col)))))
-             new_lines)
-
-            (set-xile-buffer-info-lines info new_lines))
-          )
-
-        (define (handle-update-op-copy op)
-          #f)
-
-        (define (handle-update-op-skip op)
-          (let ((old_ix (xile-buffer-info-index info))
-                (count (xi-op-count op)))
-            (set-xile-buffer-info-index info (+ old_ix count))))
-
-        (define (handle-update-op-invalidate op)
-          ;; Use (set-xi-line-valid line #f) or (make-xi-line #f #f #f #f #f)
-          ;; (xi-op-count op) times
-          #f)
-
-        (define (handle-update-op-update op)
-          ;; Not handled by protocol yet
-          (let ((old_ix (xile-buffer-info-index info))
-                (count (xi-op-count op)))
-            (set-xile-buffer-info-index info (+ old_ix count))))
-
-
         (define (handle-update-op op)
-          (let ((type (xi-op-type op)))
-            (cond ((eq? type 'ins)
-                   (handle-update-op-ins op))
-                  ((eq? type 'copy)
-                   (handle-update-op-copy op))
-                  ((eq? type 'skip)
-                   (handle-update-op-skip op))
-                  ((eq? type 'invalidate)
-                   (handle-update-op-invalidate op))
-                  ((eq? type 'update)
-                   (handle-update-op-update op))
-                  (else (format (current-error-port) "Unknown update type : ~a~%" type)))))
+          (let ((type (xi-op-type op))
+                (cache (xile-buffer-info-line_cache info)))
+            (cond
+             ((eq? type 'ins)
+              (set-xile-buffer-info-line_cache info
+                                               (xi-line-cache-handle-update-ins cache op))
+              (format (current-error-port) "After ins : ~%~y~%" (xile-buffer-info-line_cache info)))
+             ((eq? type 'invalidate)
+              (set-xile-buffer-info-line_cache info
+                                               (xi-line-cache-handle-update-invalidate cache op))
+              (format (current-error-port) "After invalidate : ~%~y~%" (xile-buffer-info-line_cache info)))
+             ((eq? type 'copy)
+              (set-xile-buffer-info-line_cache info
+                                               (xi-line-cache-handle-update-copy cache op))
+              (format (current-error-port) "After copy : ~%~y~%" (xile-buffer-info-line_cache info)))
+             ((eq? type 'skip)
+              (set-xile-buffer-info-line_cache info
+                                               (xi-line-cache-handle-update-skip cache op))
+              (format (current-error-port) "After skip : ~%~y~%" (xile-buffer-info-line_cache info)))
+             ((eq? type 'update)
+              (set-xile-buffer-info-line_cache info
+                                               (xi-line-cache-handle-update-update cache op))
+              (format (current-error-port) "After update : ~%~y~%" (xile-buffer-info-line_cache info)))
+             (else (format (current-error-port) "Unknown update type : ~a~%" type)))))
 
         (set! dispatch
           (lambda (m)
@@ -240,6 +309,8 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
                   ((eq? m 'get-win) (xile-buffer-info-bufwin info))
                   ((eq? m 'create-view) create-view)
                   ((eq? m 'scroll) scroll)
+                  ((eq? m 'move_up) (move_up))
+                  ((eq? m 'move_down) (move_down))
                   ((eq? m 'cb-scroll-to) cb-scroll-to)
                   ((eq? m 'cb-update) cb-update)
                   (else (error (format #f "Unknown request : MAKE-XILE-BUFFER ~a~%" m))))))

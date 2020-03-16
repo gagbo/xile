@@ -79,9 +79,7 @@ Return a pair (input-port . output-port) for pipe communication with xi-core pro
   "Return a thread calling HANDLER-PROC on a given PORT"
   (parameterize ((current-output-port (open "logs/xile-listen-out.log" (logior O_APPEND O_CREAT O_WRONLY)))
                  (current-error-port (open "logs/xile-listen-err.log" (logior O_APPEND O_CREAT O_WRONLY))))
-    (make-thread handler-proc port)
-    )
-  )
+    (make-thread handler-proc port)))
 
 ;; HACK : Begin a let-binding to share callback registration and fetching.
 (let (;; https://www.gnu.org/software/guile/manual/html_node/Callback-Closure.html#Callback-Closure

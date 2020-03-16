@@ -289,51 +289,75 @@ position."
 
 (define (xile-msg-edit-move_up view_id)
   "move_up"
-  (xile-msg-edit-generic 'move_up view_id))
+  (xile-notif-generic
+   'edit
+   #:notif-param-alist `((method . move_up) (view_id . ,view_id) (params . ()))))
 
 (define (xile-msg-edit-move_up_and_modify_selection view_id)
   "move_up_and_modify_selection"
-  (xile-msg-edit-generic 'move_up_and_modify_selection view_id))
+  (xile-notif-generic
+   'edit
+   #:notif-param-alist `((method . move_up_and_modify_selection) (view_id . ,view_id) (params . ()))))
 
 (define (xile-msg-edit-move_down view_id)
   "move_down"
-  (xile-msg-edit-generic 'move_down view_id))
+  (xile-notif-generic
+   'edit
+   #:notif-param-alist `((method . move_down) (view_id . ,view_id) (params . ()))))
 
 (define (xile-msg-edit-move_down_and_modify_selection view_id)
   "move_down_and_modify_selection"
-  (xile-msg-edit-generic 'move_down_and_modify_selection view_id))
+  (xile-notif-generic
+   'edit
+   #:notif-param-alist `((method . move_down_and_modify_selection) (view_id . ,view_id) (params . ()))))
 
 (define (xile-msg-edit-move_left view_id)
   "move_left"
-  (xile-msg-edit-generic 'move_left view_id))
+  (xile-notif-generic
+   'edit
+   #:notif-param-alist `((method . move_left) (view_id . ,view_id) (params . ()))))
 
 (define (xile-msg-edit-move_left_and_modify_selection view_id)
   "move_left_and_modify_selection"
-  (xile-msg-edit-generic 'move_left_and_modify_selection view_id))
+  (xile-notif-generic
+   'edit
+   #:notif-param-alist `((method . move_left_and_modify_selection) (view_id . ,view_id) (params . ()))))
 
 (define (xile-msg-edit-move_right view_id)
   "move_right"
-  (xile-msg-edit-generic 'move_right view_id))
+  (xile-notif-generic
+   'edit
+   #:notif-param-alist `((method . move_right) (view_id . ,view_id) (params . ()))))
 
 (define (xile-msg-edit-move_right_and_modify_selection view_id)
   "move_right_and_modify_selection"
-  (xile-msg-edit-generic 'move_right_and_modify_selection view_id))
+  (xile-notif-generic
+   'edit
+   #:notif-param-alist `((method . move_right_and_modify_selection) (view_id . ,view_id) (params . ()))))
 
 (define (xile-msg-edit-scroll_page_up view_id)
   "scroll_page_up"
-  (xile-msg-edit-generic 'scroll_page_up view_id))
+  (xile-notif-generic
+   'edit
+   #:notif-param-alist `((method . scroll_page_up) (view_id . ,view_id) (params . ()))))
 
 (define (xile-msg-edit-page_up_and_modify_selection view_id)
   "page_up_and_modify_selection"
-  (xile-msg-edit-generic 'page_up_and_modify_selection view_id))
+  (xile-notif-generic
+   'edit
+   #:notif-param-alist `((method . page_up_and_modify_selection) (view_id . ,view_id) (params . ()))))
 
 (define (xile-msg-edit-scroll_page_down view_id)
   "scroll_page_down"
-  (xile-msg-edit-generic 'scroll_page_down view_id))
+  (xile-notif-generic
+   'edit
+   #:notif-param-alist `((method . scroll_page_down) (view_id . ,view_id) (params . ()))))
 
 (define (xile-msg-edit-page_down_and_modify_selection view_id)
   "page_down_and_modify_selection"
-  (xile-msg-edit-generic 'page_down_and_modify_selection view_id))
+  (xile-notif-generic
+   'edit
+   #:notif-param-alist `((method . page_down_and_modify_selection) (view_id . ,view_id) (params . ()))))
 
 (define (xile-msg-edit-yank view_id)
   "yank"
