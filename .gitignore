@@ -73,4 +73,7 @@ Cargo.lock
 *.scm#*
 .#*.scm
 
+### Logs from tests
+*.log
+
 # End of https://www.gitignore.io/api/rust,emacs,scheme
