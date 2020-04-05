@@ -29,5 +29,4 @@ jobs:
     # Runs a set of commands using the runners shell
     - name: Test messages lib
       run: |
-        cd test
-        ./xile-msg-spec.scm
+        guile --no-auto-compile test/xile-msg-spec.scm
