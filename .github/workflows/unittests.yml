@@ -24,7 +24,7 @@ jobs:
 
     # Runs a single command using the runners shell
     - name: Install dependencies
-      run: apt install guile-3.0 libncurses-dev guile-json
+      run: sudo apt install guile-3.0 libncurses-dev guile-json
 
     # Runs a set of commands using the runners shell
     - name: Test messages lib
