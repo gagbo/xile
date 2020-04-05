@@ -98,19 +98,13 @@
         (old-lines (xi-line-cache-lines cache))
         (count (xi-op-count update)))
 
-    (cond
-     ((> inv-before count)
-      (let ((new-lines (make-vector (vector-length old-lines))))
-        (vector-copy! new-lines 0 old-lines count)
-        (make-xi-line-cache
-         new-lines (- inv-before count) (max count (- inv-after count)))))
-     (else
-      (let* ((truncated-count (- count inv-before))
-             (truncated-inv-after (max (- inv-after truncated-count) 0))
-             (new-lines (make-vector (+ truncated-inv-after truncated-count))))
-        (vector-copy! new-lines truncated-inv-after old-lines inv-before (+ inv-before truncated-count))
-        (vector-copy! new-lines 0 old-lines truncated-count (+ truncated-count truncated-inv-after))
-        (make-xi-line-cache new-lines 0 (+ truncated-inv-after truncated-count)))))))
+    ;; Do not do anything if we're asked to copy everything
+    (if (and (= 0 inv-before) (= count (vector-length old-lines)))
+        cache
+        (let* ((new-lines (make-vector (- inv-after inv-before))))
+          (vector-copy! new-lines 0 old-lines (+ inv-before count) inv-after)
+          (vector-copy! new-lines (- inv-after (+ inv-before count)) old-lines inv-before (+ inv-before count))
+          (make-xi-line-cache new-lines 0 (- inv-after inv-before))))))
 
 (define (xi-line-cache-handle-update-skip cache update)
   (let ((inv-before (xi-line-cache-invalid_before cache))
@@ -118,11 +112,8 @@
         (old-lines (xi-line-cache-lines cache))
         (count (xi-op-count update)))
 
-    (define new-lines (vector-copy old-lines count))
-    (let ((new_inv-before (if (>= inv-before count)
-                              (- inv-before count)
-                              0)))
-      (make-xi-line-cache new-lines new_inv-before (- inv-after count)))))
+    (define new-lines (vector-copy old-lines (+ count inv-before)))
+    (make-xi-line-cache new-lines 0 (- inv-after count))))
 
 (define (xi-line-cache-handle-update-invalidate cache update)
   (let ((inv-before (xi-line-cache-invalid_before cache))
