@@ -115,9 +115,11 @@
           (first-buffer 'move_up)
           (loop (getch (first-buffer 'get-win))))
          ((eqv? ch KEY_NPAGE)
-          ((first-buffer 'scroll) 30 (+ 30 (getmaxy (first-buffer 'get-win))))
+          ((first-buffer 'scroll-view-down) 1)
           (loop (getch (first-buffer 'get-win))))
-
+         ((eqv? ch KEY_PPAGE)
+          ((first-buffer 'scroll-view-up) 1)
+          (loop (getch (first-buffer 'get-win))))
 
          (else
           (clear-footer-text xile-footer)

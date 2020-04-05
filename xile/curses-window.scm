@@ -181,6 +181,7 @@ Opening multiple buffers pointing to the same FILE_PATH is undefined behaviour,
 as of 2020-03-09, xi doesn't handle multiple views of a single file."
       (let* ((info (make-xile-buffer-info
                     #f file_path (make-xile-main) #t (make-xi-line-cache #() 0 0) 0 #f))
+             (current-view (cons 0 (getmaxy (xile-buffer-info-bufwin info))))
              (to-xi port-to-xi)
              (to-xi-guard send-mutex)
              (bufwin-guard (make-mutex))
@@ -195,6 +196,19 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
 
         (define (scroll min-line max-line)
           (rpc-send-notif (xile-msg-edit-scroll (xile-buffer-info-view_id info) min-line max-line)))
+
+        (define (scroll-view-down lines)
+          (let ((current-min-line (car current-view))
+                (current-max-line (cdr current-view)))
+            (set! current-view (cons (+ current-min-line lines) (+ current-max-line lines)))
+            (scroll (car current-view) (cdr current-view))))
+
+        (define (scroll-view-up lines)
+          (let* ((current-min-line (car current-view))
+                 (current-max-line (cdr current-view))
+                 (max-scrolled-lines (min lines current-min-line)))
+            (set! current-view (cons (- current-min-line max-scrolled-lines) (- current-max-line max-scrolled-lines)))
+            (scroll (car current-view) (cdr current-view))))
 
         (define (move_down)
           (rpc-send-notif (xile-msg-edit-move_down (xile-buffer-info-view_id info))))
@@ -227,19 +241,19 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
         (define (draw-buffer)
           (with-mutex bufwin-guard
             (let* ((index (xile-buffer-info-index info))
-                  (cache (xile-buffer-info-line_cache info))
-                  (inv-before (xi-line-cache-invalid_before cache))
-                  (inv-after (xi-line-cache-invalid_after cache))
-                  (window-lines (getmaxy (xile-buffer-info-bufwin info))))
+                   (cache (xile-buffer-info-line_cache info))
+                   (inv-before (xi-line-cache-invalid_before cache))
+                   (inv-after (xi-line-cache-invalid_after cache))
+                   (window-lines (getmaxy (xile-buffer-info-bufwin info))))
               (format (current-output-port) "Drawing between ~a and ~a~%" inv-before inv-after)
               (begin
                 (vector-for-each
                  (lambda (i line)
                    (when (and (>= i inv-before) (< i inv-after))
-                     (if (xi-line-valid line)
+                     (if (and (xi-line-valid line) (>= (xi-line-ln line) (1+ (car current-view))))
                          (addstr (xile-buffer-info-bufwin info)
                                  (format #f "~a" (xi-line-text line))
-                                 #:y (- i index) #:x 0))))
+                                 #:y (- (xi-line-ln line) (1+ (car current-view))) #:x 0))))
                  (xi-line-cache-lines (xile-buffer-info-line_cache info)))
 
                 (when (xile-buffer-info-cursor info)
@@ -300,6 +314,8 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
                   ((eq? m 'get-win) (xile-buffer-info-bufwin info))
                   ((eq? m 'create-view) create-view)
                   ((eq? m 'scroll) scroll)
+                  ((eq? m 'scroll-view-up) scroll-view-up)
+                  ((eq? m 'scroll-view-down) scroll-view-down)
                   ((eq? m 'move_up) (move_up))
                   ((eq? m 'move_down) (move_down))
                   ((eq? m 'cb-scroll-to) cb-scroll-to)
