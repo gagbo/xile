@@ -22,11 +22,36 @@ jobs:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
 
+    - name: Cache Guile 3.0.2
+      id: cache-guile-3-0-2
+      uses: actions/cache@v1
+      with:
+        path: guile-3.0.2
+        key: ${{ runner.os }}-guile-3-0-2
+
     # Runs a single command using the runners shell
-    - name: Install dependencies (Guile 2.2)
-      run: sudo apt install guile-2.2 libncurses-dev guile-json
+    - name: Install dependencies (Ncurses)
+      run: sudo apt install libncurses-dev
+
+    - name: Install dependencies (Guile 3.0.2)
+      if: steps.cache-guile-3-0-2.outputs.cache-hit != 'true'
+      run: |
+        sudo apt install wget
+        wget https://ftp.gnu.org/gnu/guile/guile-3.0.2.tar.gz
+        tar -xzf guile-3.0.2.tar.gz
+        cd guile-3.0.2
+        ./configure --prefix="$(PWD)/install" && make install
+        wget http://download.savannah.gnu.org/releases/guile-json/guile-json-3.3.0.tar.gz
+        tar -xzf guile-json-3.3.0.tar.gz
+        cd guile-json-3.3.0
+        ./configure --prefix="$(PWD)/../install" && make install
+        cd ..
+        wget https://ftp.gnu.org/gnu/guile-ncurses/guile-ncurses-3.0.tar.gz
+        tar -xzf guile-ncurses-3.0.tar.gz
+        cd guile-ncurses-3.0
+        PKG_CONFIG_PATH="$(pwd)/../install/lib/pkgconfig" ./configure --prefix="$(PWD)/../install" CPPFLAGS=-I"$(PWD)/../install/include" LDFLAGS=-L"$(PWD)/../install/lib" && make install
 
     # Runs a set of commands using the runners shell
     - name: Test messages lib
       run: |
-        guile --no-auto-compile test/xile-msg-spec.scm
+        ./guile-3.0.2/install/bin/guile --no-auto-compile test/xile-msg-spec.scm
