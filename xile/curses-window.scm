@@ -4,6 +4,7 @@
   #:use-module (xile message)
   #:use-module (xile json-rpc)
   #:use-module (xile backend-notifications)
+  #:use-module (xile line-cache)
   #:use-module (ncurses curses)
   #:use-module (ice-9 futures)
   #:use-module (ice-9 threads)
@@ -77,69 +78,6 @@
          (startx 0)
          (starty 1))
     (newwin height width starty startx)))
-
-(define-record-type <xi-line-cache>
-  (make-xi-line-cache lines invalid_before invalid_after)
-  xi-line-cache?
-  (lines xi-line-cache-lines set-xi-line-cache-lines)
-  (invalid_before xi-line-cache-invalid_before set-xi-line-cache-invalid_before)
-  (invalid_after xi-line-cache-invalid_after set-xi-line-cache-invalid_after))
-
-(define (xi-line-cache-handle-update-update cache update)
-  (let ((inv-before (xi-line-cache-invalid_before cache))
-        (inv-after (xi-line-cache-invalid_after cache))
-        (old-lines (xi-line-cache-lines cache))
-        (count (xi-op-count update)))
-    (make-xi-line-cache old-lines inv-before inv-after)))
-
-(define (xi-line-cache-handle-update-copy cache update)
-  (let ((inv-before (xi-line-cache-invalid_before cache))
-        (inv-after (xi-line-cache-invalid_after cache))
-        (old-lines (xi-line-cache-lines cache))
-        (count (xi-op-count update)))
-
-    ;; Do not do anything if we're asked to copy everything
-    (if (and (= 0 inv-before) (= count (vector-length old-lines)))
-        cache
-        (let* ((new-lines (make-vector (- inv-after inv-before))))
-          (vector-copy! new-lines 0 old-lines (+ inv-before count) inv-after)
-          (vector-copy! new-lines (- inv-after (+ inv-before count)) old-lines inv-before (+ inv-before count))
-          (make-xi-line-cache new-lines 0 (- inv-after inv-before))))))
-
-(define (xi-line-cache-handle-update-skip cache update)
-  (let ((inv-before (xi-line-cache-invalid_before cache))
-        (inv-after (xi-line-cache-invalid_after cache))
-        (old-lines (xi-line-cache-lines cache))
-        (count (xi-op-count update)))
-
-    (define new-lines (vector-copy old-lines (+ count inv-before)))
-    (make-xi-line-cache new-lines 0 (- inv-after count))))
-
-(define (xi-line-cache-handle-update-invalidate cache update)
-  (let ((inv-before (xi-line-cache-invalid_before cache))
-        (inv-after (xi-line-cache-invalid_after cache))
-        (old-lines (xi-line-cache-lines cache))
-        (count (xi-op-count update)))
-
-    (define new-lines (make-vector (+ (vector-length old-lines) count)))
-    (vector-copy! new-lines 0 old-lines)
-
-    (if (equal? (vector-length old-lines) 0)
-        (make-xi-line-cache new-lines (+ inv-before count) inv-after)
-        (make-xi-line-cache new-lines inv-before inv-after))))
-
-(define (xi-line-cache-handle-update-ins cache update)
-  (let ((inv-before (xi-line-cache-invalid_before cache))
-        (inv-after (xi-line-cache-invalid_after cache))
-        (old-lines (xi-line-cache-lines cache))
-        (count (xi-op-count update))
-        (ins-lines (xi-op-lines update)))
-
-    (define new-lines (make-vector (+ inv-after (vector-length ins-lines))))
-    (vector-copy! new-lines 0 old-lines 0 inv-after)
-    (vector-copy! new-lines inv-after ins-lines)
-
-    (make-xi-line-cache new-lines inv-before (vector-length new-lines))))
 
 (define-record-type <xile-buffer-info>
   (make-xile-buffer-info view_id file_path bufwin pristine line_cache index cursor)
@@ -273,40 +211,10 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
           ;; from the first line of updates.
           (with-mutex info-guard
             (set-xile-buffer-info-pristine info (xi-update-pristine result))
-            (and=>
-             (xi-update-ops result)
-             (lambda (vec)
-               (vector-for-each
-                (lambda (i op)
-                  (handle-update-op op))
-                vec))))
+            (set-xile-buffer-info-line_cache
+             info
+             (xi-line-cache-execute-update (xile-buffer-info-line_cache info) result)))
           (draw-buffer))
-
-        (define (handle-update-op op)
-          (let ((type (xi-op-type op))
-                (cache (xile-buffer-info-line_cache info)))
-            (cond
-             ((eq? type 'ins)
-              (set-xile-buffer-info-line_cache info
-                                               (xi-line-cache-handle-update-ins cache op))
-              (format (current-error-port) "After ins : ~%~y~%" (xile-buffer-info-line_cache info)))
-             ((eq? type 'invalidate)
-              (set-xile-buffer-info-line_cache info
-                                               (xi-line-cache-handle-update-invalidate cache op))
-              (format (current-error-port) "After invalidate : ~%~y~%" (xile-buffer-info-line_cache info)))
-             ((eq? type 'copy)
-              (set-xile-buffer-info-line_cache info
-                                               (xi-line-cache-handle-update-copy cache op))
-              (format (current-error-port) "After copy : ~%~y~%" (xile-buffer-info-line_cache info)))
-             ((eq? type 'skip)
-              (set-xile-buffer-info-line_cache info
-                                               (xi-line-cache-handle-update-skip cache op))
-              (format (current-error-port) "After skip : ~%~y~%" (xile-buffer-info-line_cache info)))
-             ((eq? type 'update)
-              (set-xile-buffer-info-line_cache info
-                                               (xi-line-cache-handle-update-update cache op))
-              (format (current-error-port) "After update : ~%~y~%" (xile-buffer-info-line_cache info)))
-             (else (format (current-error-port) "Unknown update type : ~a~%" type)))))
 
         (set! dispatch
           (lambda (m)

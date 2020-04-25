@@ -7,7 +7,8 @@
              (xile message)
              (xile json-rpc)
              (xile curses-window)
-             (xile backend-notifications))
+             (xile backend-notifications)
+             (xile line-cache))
 
 ;; Main
 (define (main args)

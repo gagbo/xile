@@ -68,6 +68,15 @@
   (annotations xi-update-annotations))
 
 (define (parse-xi-line line)
+  "Parse a deserialized Json LINE into a record.
+
+interface Line {
+  text?: string  // present when op is \"update\"
+  ln?: number // the logical/'real' line number for this line.
+  cursor?: number[]  // utf-8 code point offsets, in increasing order
+  styles?: number[]  // length is a multiple of 3, see below
+} "
+
   (let ((text (assoc-ref line "text"))
         (ln (assoc-ref line "ln"))
         (cursor (assoc-ref line "cursor"))
@@ -82,6 +91,35 @@
     (make-xi-op type count lines ln)))
 
 (define (parse-xi-update result)
+  "Parse a deserialized Json RESULT into an update
+
+update
+rev?: number
+ops: Op[]
+view-id: string
+pristine: bool
+annotations: AnnotationSlice[]
+
+interface Op {
+  op: \"copy\" | \"skip\" | \"invalidate\" | \"update\" | \"ins\"
+  n: number  // number of lines affected
+  lines?: Line[]  // only present when op is \"update\" or \"ins\"
+  ln?: number // the logical number for this line; null if this line is a soft break
+}
+
+interface AnnotationSlice {
+  type: \"find\" | \"selection\" | ...
+  ranges: [[number, number, number, number]]  // start_line, start_col, end_line, end_col
+  payloads: [{}]    // can be any json object or value
+  n: number // number of ranges
+}
+
+The pristine flag indicates whether or not, after this update, this
+document has unsaved changes.
+
+The rev field is not present in current builds, but will be at some
+point in the future. "
+ 
   (let ((view_id (assoc-ref result "view_id"))
         (update-alist (assoc-ref result "update")))
     (let ((ops (and=> (assoc-ref update-alist "ops") (lambda (vec) (vector-map (lambda (i op) (parse-xi-op op)) vec))))
@@ -90,75 +128,6 @@
           (annotations #f))
       (make-xi-update rev ops view_id pristine annotations))))
 
-;; update
-;; rev?: number
-;; ops: Op[]
-;; view-id: string
-;; pristine: bool
-;; annotations: AnnotationSlice[]
-
-;; interface Op {
-;;   op: "copy" | "skip" | "invalidate" | "update" | "ins"
-;;   n: number  // number of lines affected
-;;   lines?: Line[]  // only present when op is "update" or "ins"
-;;   ln?: number // the logical number for this line; null if this line is a soft break
-;; }
-
-;; interface AnnotationSlice {
-;;   type: "find" | "selection" | ...
-;;   ranges: [[number, number, number, number]]  // start_line, start_col, end_line, end_col
-;;   payloads: [{}]    // can be any json object or value
-;;   n: number // number of ranges
-;; }
-
-;; The pristine flag indicates whether or not, after this update, this
-;; document has unsaved changes.
-
-;; The rev field is not present in current builds, but will be at some
-;; point in the future.
-
-;; An update request can be seen as a function from the old client
-;; cache state to a new one. During evaluation, maintain an index
-;; (old_ix) into the old lines array, initially 0, and a new lines
-;; array, initially empty. [Note that this document specifies the
-;; semantics. The actual implementation will almost certainly
-;; represent at least initial and trailing sequences of invalid lines
-;; by their count; and the editing operations may be more efficiently
-;; done in-place than by copying from the old state to the new].
-
-;; The “copy” op appends the n lines [old_ix .. old_ix + n] to the new
-;; lines array, and increments old_ix by n. Additionally, “copy”
-;; includes the ln field; this represents the new logical line number
-;; (that is, the ‘real’ line number, ignoring word wrap) of the first
-;; line to be copied. Note: if the first line to be copied is itself a
-;; wrapped line, the ln number will need to be incremented in order to
-;; be correct for the first ‘real’ line.
-
-;; The “skip” op increments old_ix by n.
-
-;; The “invalidate” op appends n invalid lines to the new lines array.
-
-;; The “ins” op appends new lines, specified by the “lines” parameter,
-;; specified in more detail below. For this op, n must equal
-;; lines.length (alternative: make n optional in this case). It does
-;; not update old_ix.
-
-;; The “update” op updates the cursor and/or style of n existing
-;; lines. As in “ins”, n must equal lines.length. It also increments
-;; old_ix by n.
-
-;; Note: The “update” op is not currently used by core.
-
-;; In all cases, n is guaranteed positive and nonzero (as a
-;; consequence, any line present in the old state is copied at most
-;; once to the new state).
-
-;; interface Line {
-;;   text?: string  // present when op is "update"
-;;   ln?: number // the logical/'real' line number for this line.
-;;   cursor?: number[]  // utf-8 code point offsets, in increasing order
-;;   styles?: number[]  // length is a multiple of 3, see below
-;; }
 
 ;; The interpretation of a line is different for “update” or “ins”
 ;; ops. In an “ins” op, text is always present, and missing cursor or
