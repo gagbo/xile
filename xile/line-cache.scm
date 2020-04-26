@@ -21,11 +21,14 @@
   (invalid_after xi-line-cache-invalid_after set-xi-line-cache-invalid_after)) ; invalid_after is exclusive
 
 (define (xi-line-cache-valid-range cache)
-  "Return a vector of xi-line elements in the invalid_before/invalid_after range of CACHE."
-  (vector-copy
-   (xi-line-cache-lines cache)
-   (xi-line-cache-invalid_before cache)
-   (xi-line-cache-invalid_after cache)))
+  "Return a vector of xi-line elements in the invalid_before/invalid_after range of CACHE.
+Return an empty vector if invalid_before >= invalid_after"
+  (let ((start (xi-line-cache-invalid_before cache))
+        (end (xi-line-cache-invalid_after cache))
+        (all-lines (xi-line-cache-lines cache)))
+    (if (< start end)
+        (vector-copy all-lines start end)
+        #())))
 
 (define (xi-line-cache-execute-update cache update)
   "Return a xi-line-cache with all UPDATE operations accomplished
