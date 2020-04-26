@@ -17,8 +17,8 @@
   (make-xi-line-cache lines invalid_before invalid_after)
   xi-line-cache?
   (lines xi-line-cache-lines set-xi-line-cache-lines)
-  (invalid_before xi-line-cache-invalid_before set-xi-line-cache-invalid_before)
-  (invalid_after xi-line-cache-invalid_after set-xi-line-cache-invalid_after))
+  (invalid_before xi-line-cache-invalid_before set-xi-line-cache-invalid_before) ; invalid_before is inclusive
+  (invalid_after xi-line-cache-invalid_after set-xi-line-cache-invalid_after)) ; invalid_after is exclusive
 
 (define (xi-line-cache-valid-range cache)
   "Return a vector of xi-line elements in the invalid_before/invalid_after range of CACHE."
