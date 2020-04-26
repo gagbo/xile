@@ -27,6 +27,7 @@
             set-xile-buffer-info-bufwin))
 
 (define (make-xile-header)
+  "Return a window suitable for a Xile header."
   (let* ((height 1)
          (width (- (cols) 10))
          (startx 5)
@@ -38,6 +39,7 @@
      (newwin height width starty startx))))
 
 (define (make-xile-footer)
+  "Return a window suitable for a Xile footer."
   (let* ((height 2)
          (width 0)
          (startx 0)
@@ -48,11 +50,13 @@
      (newwin height width starty startx))))
 
 (define (update-header header-win text)
+  "Update the header HEADER-WIN with TEXT."
   ;; TODO Make the refresh optional
   (addstr header-win text #:y 0 #:x 10)
   (refresh header-win))
 
 (define (update-footer footer-win text)
+  "Update the footer window FOOTER-WIN with TEXT."
   ;; TODO Make the refresh optional
 
   ;; HACK : bkdgset! scope assumes the old value is (normal #\sp) and hardcodes it in the
@@ -64,12 +68,14 @@
   (refresh footer-win))
 
 (define (clear-footer-text footer-win)
+  "Clear the text in the footer window FOOTER-WIN."
   ;; TODO Make the refresh optional
   (move footer-win 1 0)
   (clrtobot footer-win)
   (refresh footer-win))
 
 (define (make-xile-main)
+  "Return a window suitable to hold a buffer."
   ;; TODO : Get proper height/width params
   ;; 2 is (getmaxy xile-footer-win) and 1 is (getmaxy xile-header-win)
   ;; But HOW can I get these into scope properly for evaluation ?
@@ -82,13 +88,13 @@
 (define-record-type <xile-buffer-info>
   (make-xile-buffer-info view_id file_path bufwin pristine line_cache index cursor)
   xile-buffer-info?
-  (view_id xile-buffer-info-view_id set-xile-buffer-info-view_id)
-  (file_path xile-buffer-info-file_path set-xile-buffer-info-file_path)
-  (bufwin xile-buffer-info-bufwin set-xile-buffer-info-bufwin)
-  (pristine xile-buffer-info-pristine set-xile-buffer-info-pristine)
-  (line_cache xile-buffer-info-line_cache set-xile-buffer-info-line_cache)
-  (index xile-buffer-info-index set-xile-buffer-info-index)
-  (cursor xile-buffer-info-cursor set-xile-buffer-info-cursor))
+  (view_id xile-buffer-info-view_id set-xile-buffer-info-view_id) ; string : internal Xi identifier for the buffer
+  (file_path xile-buffer-info-file_path set-xile-buffer-info-file_path) ; string : file path to the file attached to the buffer
+  (bufwin xile-buffer-info-bufwin set-xile-buffer-info-bufwin) ; ncurses window : window displaying the buffer
+  (pristine xile-buffer-info-pristine set-xile-buffer-info-pristine) ; boolean : pristine (unsaved) state
+  (line_cache xile-buffer-info-line_cache set-xile-buffer-info-line_cache) ; xi-line-cache : line cache for the buffer
+  (index xile-buffer-info-index set-xile-buffer-info-index) ; No idea ?  TODO : cleanup
+  (cursor xile-buffer-info-cursor set-xile-buffer-info-cursor)) ; (int . int . nil) :  Cursor position as (y . x . nil)
 
 (define make-xile-buffer #f)
 (define find-xile-buffer #f)
@@ -130,18 +136,22 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
         ;; TODO : Refactor the notification sending out of buffer.
         ;; This is the most stateless part we can start with.
         (define (rpc-send-notif notif)
+          "Send the notification NOTIF to Xi through RPC."
           (xile-rpc-send to-xi to-xi-guard notif))
 
         (define (scroll min-line max-line)
+          "Send Scroll[MIN-LINE MAX-LINE]."
           (rpc-send-notif (xile-msg-edit-scroll (xile-buffer-info-view_id info) min-line max-line)))
 
         (define (scroll-view-down lines)
+          "Scroll the view down LINES lines."
           (let ((current-min-line (car current-view))
                 (current-max-line (cdr current-view)))
             (set! current-view (cons (+ current-min-line lines) (+ current-max-line lines)))
             (scroll (car current-view) (cdr current-view))))
 
         (define (scroll-view-up lines)
+          "Scroll the view up LINES lines."
           (let* ((current-min-line (car current-view))
                  (current-max-line (cdr current-view))
                  (max-scrolled-lines (min lines current-min-line)))
@@ -149,12 +159,15 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
             (scroll (car current-view) (cdr current-view))))
 
         (define (move_down)
+          "Move the cursor down."
           (rpc-send-notif (xile-msg-edit-move_down (xile-buffer-info-view_id info))))
 
         (define (move_up)
+          "Move the cursor up."
           (rpc-send-notif (xile-msg-edit-move_up (xile-buffer-info-view_id info))))
 
-        (define (create-view) ; "" Constructor "" => sends a "new_view" message and sets the attribute in the callback
+        (define (create-view)
+          " \"\" Constructor \"\" => sends a \"new_view\" message and sets the attribute in the callback. "
           (keypad! (xile-buffer-info-bufwin info) #t)
           (curs-set 1)
           (let ((msg (xile-msg-new_view #:file_path file_path))
@@ -177,6 +190,7 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
               (wait-condition-variable wait-for-id id-to-buffer-guard))))
 
         (define (draw-buffer)
+          "Draw the buffer in its window and refresh the window (redisplay code)."
           (with-mutex bufwin-guard
             (let* ((index (xile-buffer-info-index info))
                    (cache (xile-buffer-info-line_cache info))
@@ -202,13 +216,13 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
               (refresh (xile-buffer-info-bufwin info)))))
 
         (define (cb-scroll-to y x)
+          "Callback to handle scroll_to message y x from Xi."
           (with-mutex bufwin-guard
             (move (xile-buffer-info-bufwin info) y x)
             (refresh (xile-buffer-info-bufwin info))))
 
         (define (cb-update result)
-          ;; The "update" callback here is just badly extracting the text
-          ;; from the first line of updates.
+          "Callback to handle update message RESULT from Xi."
           (with-mutex info-guard
             (set-xile-buffer-info-pristine info (xi-update-pristine result))
             (set-xile-buffer-info-line_cache
