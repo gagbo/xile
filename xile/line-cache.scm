@@ -10,7 +10,8 @@
             make-xi-line-cache
             xi-line-cache-invalid_before
             xi-line-cache-invalid_after
-            xi-line-cache-lines))
+            xi-line-cache-lines
+            xi-line-cache-valid-range))
 
 (define-record-type <xi-line-cache>
   (make-xi-line-cache lines invalid_before invalid_after)
@@ -18,6 +19,13 @@
   (lines xi-line-cache-lines set-xi-line-cache-lines)
   (invalid_before xi-line-cache-invalid_before set-xi-line-cache-invalid_before)
   (invalid_after xi-line-cache-invalid_after set-xi-line-cache-invalid_after))
+
+(define (xi-line-cache-valid-range cache)
+  "Return a vector of xi-line elements in the invalid_before/invalid_after range of CACHE."
+  (vector-copy
+   (xi-line-cache-lines cache)
+   (xi-line-cache-invalid_before cache)
+   (xi-line-cache-invalid_after cache)))
 
 (define (xi-line-cache-execute-update cache update)
   "Return a xi-line-cache with all UPDATE operations accomplished
@@ -90,8 +98,8 @@ Note: The “update” op is not currently used by core.
 "
   (let ((inv-before (xi-line-cache-invalid_before cache))
         (inv-after (xi-line-cache-invalid_after cache))
-        (old-lines (xi-line-cache-lines cache))
-        (count (xi-op-count update)))
+(old-lines (xi-line-cache-lines cache))
+(count (xi-op-count update)))
     (make-xi-line-cache old-lines inv-before inv-after)))
 
 (define (xi-line-cache-handle-update-copy cache update)
@@ -107,8 +115,8 @@ be correct for the first ‘real’ line. "
 
   (let ((inv-before (xi-line-cache-invalid_before cache))
         (inv-after (xi-line-cache-invalid_after cache))
-        (old-lines (xi-line-cache-lines cache))
-        (count (xi-op-count update)))
+(old-lines (xi-line-cache-lines cache))
+(count (xi-op-count update)))
 
     ;; Do not do anything if we're asked to copy everything
     (if (and (= 0 inv-before) (= count (vector-length old-lines)))
@@ -124,8 +132,8 @@ be correct for the first ‘real’ line. "
 The “skip” op increments old_ix by n. "
   (let ((inv-before (xi-line-cache-invalid_before cache))
         (inv-after (xi-line-cache-invalid_after cache))
-        (old-lines (xi-line-cache-lines cache))
-        (count (xi-op-count update)))
+(old-lines (xi-line-cache-lines cache))
+(count (xi-op-count update)))
 
     (define new-lines (vector-copy old-lines (+ count inv-before)))
     (make-xi-line-cache new-lines 0 (- inv-after count))))
@@ -136,8 +144,8 @@ The “skip” op increments old_ix by n. "
 The “invalidate” op appends n invalid lines to the new lines array. "
   (let ((inv-before (xi-line-cache-invalid_before cache))
         (inv-after (xi-line-cache-invalid_after cache))
-        (old-lines (xi-line-cache-lines cache))
-        (count (xi-op-count update)))
+(old-lines (xi-line-cache-lines cache))
+(count (xi-op-count update)))
 
     (define new-lines (make-vector (+ (vector-length old-lines) count)))
     (vector-copy! new-lines 0 old-lines)
@@ -156,9 +164,9 @@ not update old_ix. "
 
   (let ((inv-before (xi-line-cache-invalid_before cache))
         (inv-after (xi-line-cache-invalid_after cache))
-        (old-lines (xi-line-cache-lines cache))
-        (count (xi-op-count update))
-        (ins-lines (xi-op-lines update)))
+(old-lines (xi-line-cache-lines cache))
+(count (xi-op-count update))
+(ins-lines (xi-op-lines update)))
 
     (define new-lines (make-vector (+ inv-after (vector-length ins-lines))))
     (vector-copy! new-lines 0 old-lines 0 inv-after)
