@@ -5,6 +5,8 @@
   #:use-module (srfi srfi-9)
   #:use-module (srfi srfi-43)
   #:export (parse-xi-update
+            parse-xi-line
+            parse-xi-op
             xi-op?
             xi-op-type
             xi-op-count
