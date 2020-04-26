@@ -9,6 +9,15 @@
              (xile line-cache)
              (xile backend-notifications))
 
+(define (wrap-messages-in-update msg-list)
+  (parse-xi-update `(("view_id" . "test-update-spec")
+                     ("update" . (("ops" . ,(list->vector msg-list))
+                                  ("rev" . 1)
+                                  ("pristine" . #f))))))
+
+(define (wrap-alist-in-line single-line)
+  (parse-xi-line single-line))
+
 ;; Testing variables
 ;; This will prevent having to write it in every test
 (define test-ins-line-1
@@ -52,18 +61,13 @@
   (make-xi-line-cache #() 0 0))
 
 (define test-one-line-cache-all-valid
-  (make-xi-line-cache #(test-ins-line-1) 0 1))
+  (make-xi-line-cache (vector (wrap-alist-in-line test-ins-line-1)) 0 1))
 
 (define test-one-line-cache-some-valid
-  (make-xi-line-cache #(test-invalid-xi-line test-ins-line-1 test-invalid-xi-line) 1 2))
-
-(define (wrap-messages-in-update msg-list)
-  (parse-xi-update `(("view_id" . "test-update-spec")
-                     ("update" . (("ops" . ,(list->vector msg-list))
-                                  ("rev" . 1)
-                                  ("pristine" . #f))))))
+  (make-xi-line-cache (vector test-invalid-xi-line (wrap-alist-in-line test-ins-line-1) test-invalid-xi-line) 1 2))
 
 (test-begin "update-operations")
+;; Insertion into an empty cache
 (define insert-into-an-empty-cache
   (xi-line-cache-execute-update
    test-empty-cache
@@ -84,6 +88,50 @@
 (test-equal "Insert into an empty cache -- first valid line"
   (xi-line-text (vector-ref (xi-line-cache-valid-range insert-into-an-empty-cache) 0))
   (assoc-ref test-ins-line-1 "text"))
+
+;; Insertion into a hot cache
+(define insert-into-a-hot-cache
+  (xi-line-cache-execute-update
+   test-one-line-cache-all-valid
+   (wrap-messages-in-update `(,test-ins-message))))
+
+(test-equal "Insert into a hot cache -- invalid_before"
+  (xi-line-cache-invalid_before insert-into-a-hot-cache)
+  0)
+
+(test-equal "Insert into a hot cache -- invalid_after"
+  (xi-line-cache-invalid_after insert-into-a-hot-cache)
+  4)
+
+(test-equal "Insert into a hot cache -- valid range size"
+  (vector-length (xi-line-cache-valid-range insert-into-a-hot-cache))
+  4)
+
+(test-equal "Insert into a hot cache -- second valid line"
+  (xi-line-text (vector-ref (xi-line-cache-valid-range insert-into-a-hot-cache) 1))
+  (assoc-ref test-ins-line-1 "text"))
+
+;; Insertion into a dirty cache
+(define insert-into-a-dirty-cache
+  (xi-line-cache-execute-update
+   test-one-line-cache-some-valid
+   (wrap-messages-in-update `(,test-ins-message))))
+
+(test-equal "Insert into a dirty cache -- invalid_before"
+  (xi-line-cache-invalid_before insert-into-a-dirty-cache)
+  1)
+
+(test-equal "Insert into a dirty cache -- invalid_after"
+  (xi-line-cache-invalid_after insert-into-a-dirty-cache)
+  5)
+
+(test-equal "Insert into a dirty cache -- valid range size"
+  (vector-length (xi-line-cache-valid-range insert-into-a-dirty-cache))
+  4)
+
+(test-equal "Insert into a dirty cache -- last valid line"
+  (xi-line-text (vector-ref (xi-line-cache-valid-range insert-into-a-dirty-cache) 3))
+  (assoc-ref test-ins-line-3 "text"))
 
 (test-end "update-operations")
 
