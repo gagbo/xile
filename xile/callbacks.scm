@@ -23,13 +23,11 @@
     (xile-register-callback
      'scroll_to
      (lambda (result)
-       (let* ((y (assoc-ref result "line"))
-              (x (assoc-ref result "col"))
-              (view_id (assoc-ref result "view_id"))
+       (let* ((view_id (assoc-ref result "view_id"))
               (xile-buffer (find-xile-buffer (string->symbol view_id))))
          (format #t "Scroll-to : xile-buffer for ~a is ~a~%" view_id xile-buffer)
          (when xile-buffer
-           ((xile-buffer 'cb-scroll-to) y x)))))
+           ((xile-buffer 'cb-scroll-to) (parse-xi-scroll-to result))))))
 
     (xile-register-callback
      'language_changed

@@ -7,6 +7,7 @@
   #:export (parse-xi-update
             parse-xi-line
             parse-xi-op
+            parse-xi-scroll-to
             xi-op?
             xi-op-type
             xi-op-count
@@ -25,7 +26,11 @@
             xi-update-ops
             xi-update-view_id
             xi-update-pristine
-            xi-update-annotations))
+            xi-update-annotations
+            xi-scroll-to?
+            make-xi-scroll-to
+            xi-scroll-to-line
+            xi-scroll-to-col))
 
 (define-record-type <xi-op>
   (make-xi-op type count lines ln)
@@ -171,3 +176,17 @@ point in the future. "
 ;; document regions. For example, annotations are used to represent
 ;; selections and find highlights. The Annotations RFC provides a
 ;; detailed description of the API.
+
+(define-record-type <xi-scroll-to>
+  (make-xi-scroll-to line col)
+  xi-scroll-to?
+  (line xi-scroll-to-line)
+  (col xi-scroll-to-col))
+
+(define (parse-xi-scroll-to result)
+  "Parse a deserialize json RESULT into a xi-scroll-to record
+
+scroll_to: [number, number]  // line, column (in utf-8 code units) "
+  (let ((line (assoc-ref result "line"))
+        (col (assoc-ref result "col")))
+    (make-xi-scroll-to line col)))

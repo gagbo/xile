@@ -215,10 +215,10 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
 
               (refresh (xile-buffer-info-bufwin info)))))
 
-        (define (cb-scroll-to y x)
+        (define (cb-scroll-to scroll-to)
           "Callback to handle scroll_to message y x from Xi."
           (with-mutex bufwin-guard
-            (move (xile-buffer-info-bufwin info) y x)
+            (move (xile-buffer-info-bufwin info) (xi-scroll-to-line scroll-to) (xi-scroll-to-col scroll-to))
             (refresh (xile-buffer-info-bufwin info))))
 
         (define (cb-update result)
