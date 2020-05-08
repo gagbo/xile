@@ -41,7 +41,7 @@
 (define (xile-buffer-getvar state name)
   "Get the buffer-local value of variable NAME in STATE."
   (let ((key-val-pair
-         (assoc (xile-buffer-state-variables state) (string->symbol name))))
+         (assoc (string->symbol name) (xile-buffer-state-variables state))))
     (if key-val-pair
         (cdr key-val-pair)
         'undefined-xile-variable)))

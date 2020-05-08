@@ -269,4 +269,4 @@ available_themes {\"themes\": [\"InspiredGitHub\"]}"
 
 (define (parse-xi-buffer-config-change result)
   "Parse a deserialized json RESULT into a xi-buffer-config-change record."
-  (make-xi-buffer-config-change result))
+  (make-xi-buffer-config-change (or (assoc-ref result "changes") '())))
