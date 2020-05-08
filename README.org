@@ -50,16 +50,19 @@ only dependency currently needed which is not in guix packages is the guile3.0
 version of ncurses library.
 
 * Roadmap
-- [X] Display buffer
-- [X] Scroll window
-- [X] Move cursor
-- [X] User config as scheme
-- [X] Xile state (buffer local and session-global variables)
-- [ ] Proper header/footer
-- [ ] Editor states (command and insert at least)
-- [ ] Scheme evaluator on =:=
-- [ ] Edit file
-- [ ] Syntax Highlighting (using xi-core bundled syntect)
+- [X] Display buffer ::
+- [X] Scroll window ::
+- [X] Move cursor ::
+- [X] User config as scheme ::
+- [X] Xile state (buffer local and session-global variables) ::
+- [ ] Proper header/footer :: I want to decouple buffer from its curses window, and
+  have the curses-window module actually handle all of header, footer, and main
+  window together
+- [ ] Editor states (command and insert at least) ::
+- [ ] Scheme evaluator :: on =:= in a vim-like manner
+- [ ] Edit file ::
+  Set the pristing flag correctly and be able to insert characters
+- [ ] Syntax Highlighting :: (using xi-core bundled syntect)
 
 * Objectives
 
