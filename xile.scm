@@ -55,8 +55,6 @@
         ((first-buffer 'create-view))
         ((first-buffer 'scroll) 0 (getmaxy (first-buffer 'get-win))))
 
-
-
       ;; Main event loop
       (let loop ((ch (getch (first-buffer 'get-win))))
         (cond
