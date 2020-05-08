@@ -86,14 +86,13 @@
     (newwin height width starty startx)))
 
 (define-record-type <xile-buffer-info>
-  (make-xile-buffer-info view_id file_path bufwin pristine line_cache index cursor)
+  (make-xile-buffer-info view_id file_path bufwin pristine line_cache cursor)
   xile-buffer-info?
   (view_id xile-buffer-info-view_id set-xile-buffer-info-view_id) ; string : internal Xi identifier for the buffer
   (file_path xile-buffer-info-file_path set-xile-buffer-info-file_path) ; string : file path to the file attached to the buffer
   (bufwin xile-buffer-info-bufwin set-xile-buffer-info-bufwin) ; ncurses window : window displaying the buffer
   (pristine xile-buffer-info-pristine set-xile-buffer-info-pristine) ; boolean : pristine (unsaved) state
   (line_cache xile-buffer-info-line_cache set-xile-buffer-info-line_cache) ; xi-line-cache : line cache for the buffer
-  (index xile-buffer-info-index set-xile-buffer-info-index) ; No idea ?  TODO : cleanup
   (cursor xile-buffer-info-cursor set-xile-buffer-info-cursor)) ; (int . int . nil) :  Cursor position as (y . x . nil)
 
 (define make-xile-buffer #f)
@@ -124,7 +123,7 @@ The dispatching of the returned lambda can be checked in source code.
 Opening multiple buffers pointing to the same FILE_PATH is undefined behaviour,
 as of 2020-03-09, xi doesn't handle multiple views of a single file."
       (let* ((info (make-xile-buffer-info
-                    #f file_path (make-xile-main) #t (make-xi-line-cache #() 0 0) 0 #f))
+                    #f file_path (make-xile-main) #t (make-xi-line-cache #() 0 0) #f))
              (current-view (cons 0 (getmaxy (xile-buffer-info-bufwin info))))
              (to-xi port-to-xi)
              (to-xi-guard send-mutex)
@@ -192,8 +191,7 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
         (define (draw-buffer)
           "Draw the buffer in its window and refresh the window (redisplay code)."
           (with-mutex bufwin-guard
-            (let* ((index (xile-buffer-info-index info))
-                   (cache (xile-buffer-info-line_cache info))
+            (let* ((cache (xile-buffer-info-line_cache info))
                    (inv-before (xi-line-cache-invalid_before cache))
                    (inv-after (xi-line-cache-invalid_after cache))
                    (window-lines (getmaxy (xile-buffer-info-bufwin info))))
