@@ -93,7 +93,7 @@
   (bufwin xile-buffer-info-bufwin set-xile-buffer-info-bufwin) ; ncurses window : window displaying the buffer
   (pristine xile-buffer-info-pristine set-xile-buffer-info-pristine) ; boolean : pristine (unsaved) state
   (line_cache xile-buffer-info-line_cache set-xile-buffer-info-line_cache) ; xi-line-cache : line cache for the buffer
-  (cursor xile-buffer-info-cursor set-xile-buffer-info-cursor)) ; (int . int . nil) :  Cursor position as (y . x . nil)
+  (cursor xile-buffer-info-cursor set-xile-buffer-info-cursor)) ; (int . int) :  Cursor position as (y . x)
 
 (define make-xile-buffer #f)
 (define find-xile-buffer #f)
@@ -209,15 +209,18 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
                 (when (xile-buffer-info-cursor info)
                   (move (xile-buffer-info-bufwin info)
                         (car (xile-buffer-info-cursor info))
-                        (cadr (xile-buffer-info-cursor info)))))
+                        (cdr (xile-buffer-info-cursor info)))))
 
               (refresh (xile-buffer-info-bufwin info)))))
 
         (define (cb-scroll-to scroll-to)
           "Callback to handle scroll_to message y x from Xi."
-          (with-mutex bufwin-guard
-            (move (xile-buffer-info-bufwin info) (xi-scroll-to-line scroll-to) (xi-scroll-to-col scroll-to))
-            (refresh (xile-buffer-info-bufwin info))))
+          (let ((line (xi-scroll-to-line scroll-to))
+                (col (xi-scroll-to-col scroll-to)))
+            (with-mutex bufwin-guard
+              (set-xile-buffer-info-cursor info (cons line col))
+              (move (xile-buffer-info-bufwin info) line col)
+              (refresh (xile-buffer-info-bufwin info)))))
 
         (define (cb-update result)
           "Callback to handle update message RESULT from Xi."
