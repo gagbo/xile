@@ -9,7 +9,8 @@
              (xile curses-window)
              (xile backend-notifications)
              (xile line-cache)
-             (xile callbacks))
+             (xile callbacks)
+             (xile variables))
 
 ;; Main
 (define (main args)
@@ -21,6 +22,9 @@
          (send-mutex (cddddr xi-setup))
          (listener (car xi-setup))
          (stdscr (initscr)))
+
+    ;; Read user configuration
+    (load "config/xile.scm")
 
     ;; Window init code
     (raw!)
@@ -51,7 +55,7 @@
       (begin
         (register-default-callbacks)
         ;; HACK open / manipulate file
-        (define first-buffer (make-xile-buffer port-to-xi send-mutex "README.org"))
+        (define first-buffer (make-xile-buffer port-to-xi send-mutex first-file))
         ((first-buffer 'create-view))
         ((first-buffer 'scroll) 0 (getmaxy (first-buffer 'get-win))))
 
