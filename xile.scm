@@ -60,6 +60,7 @@
         ((first-buffer 'scroll) 0 (getmaxy (first-buffer 'get-win))))
 
       ;; Main event loop
+      (update-footer xile-footer (format #f  "Xile alpha -- ~a" (first-buffer 'get-name)))
       (let loop ((ch (getch (first-buffer 'get-win))))
         (cond
          ((eqv? ch #\q)

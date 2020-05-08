@@ -228,6 +228,7 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
         (lambda (m)
           (cond ((eq? m 'get-bufstate) bufstate)
                 ((eq? m 'get-win) (xile-buffer-state-bufwin bufstate))
+                ((eq? m 'get-name) (xile-buffer-state-file_path bufstate))
                 ((eq? m 'get-var) get-local-variable)
                 ((eq? m 'set-var!) set-local-variable!)
                 ((eq? m 'create-view) create-view)
