@@ -107,7 +107,7 @@ The dispatching of the returned lambda can be checked in source code.
 Opening multiple buffers pointing to the same FILE_PATH is undefined behaviour,
 as of 2020-03-09, xi doesn't handle multiple views of a single file."
       (let* ((bufstate (make-xile-buffer-state
-                    #f file_path (make-xile-main) #t (make-xi-line-cache #() 0 0) #f '()))
+                        #f file_path (make-xile-main) #t (make-xi-line-cache #() 0 0) #f '()))
              (current-view (cons 0 (getmaxy (xile-buffer-state-bufwin bufstate))))
              (to-xi port-to-xi)
              (to-xi-guard send-mutex)
@@ -206,6 +206,11 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
               (move (xile-buffer-state-bufwin bufstate) line col)
               (refresh (xile-buffer-state-bufwin bufstate)))))
 
+        (define (cb-config-changed buffer-config-changes)
+          "Callback to handle config_changed message BUFFER-CONFIG-CHANGE from Xi."
+          (with-mutex bufstate-guard
+            (xile-buffer-apply-config-change bufstate buffer-config-changes)))
+
         (define (cb-update result)
           "Callback to handle update message RESULT from Xi."
           (with-mutex bufstate-guard
@@ -227,6 +232,7 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
                   ((eq? m 'move_down) (move_down))
                   ((eq? m 'cb-scroll-to) cb-scroll-to)
                   ((eq? m 'cb-update) cb-update)
+                  ((eq? m 'cb-config-changed) cb-config-changed)
                   (else (error (format #f "Unknown request : MAKE-XILE-BUFFER ~a~%" m))))))
 
         dispatch))))

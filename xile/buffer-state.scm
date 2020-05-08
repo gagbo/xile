@@ -2,10 +2,13 @@
 ;; Xile buffer state and variables
 
 (define-module (xile buffer-state)
+  #:use-module (xile backend-notifications)
+  #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-9)
   #:export (make-xile-buffer-state
             xile-buffer-setvar!
             xile-buffer-getvar
+            xile-buffer-apply-config-change
             xile-buffer-state?
             xile-buffer-state-view_id
             set-xile-buffer-state-view_id
@@ -42,3 +45,8 @@
     (if key-val-pair
         (cdr key-val-pair)
         'undefined-xile-variable)))
+
+(define (xile-buffer-apply-config-change state changes)
+  "Apply a xi-buffer-config-change CHANGE request on STATE."
+  (for-each (lambda (single-change) (xile-buffer-setvar! state (car single-change) (cdr single-change)))
+            (xi-buffer-config-change-list changes)))

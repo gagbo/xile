@@ -49,19 +49,7 @@
             xi-available-themes?
             xi-available-themes-list
             xi-buffer-config-change?
-            xi-buffer-config-change-wrap-width
-            xi-buffer-config-change-word-wrap
-            xi-buffer-config-change-use-tab-stops
-            xi-buffer-config-change-translate-tabs-to-spaces
-            xi-buffer-config-change-tab-size
-            xi-buffer-config-change-surrounding-pairs
-            xi-buffer-config-change-scroll-past-end
-            xi-buffer-config-change-save-with-newline
-            xi-buffer-config-change-plugin-search-path
-            xi-buffer-config-change-line-ending
-            xi-buffer-config-change-font-size
-            xi-buffer-config-change-font-face
-            xi-buffer-config-change-autodetect-whitespace))
+            xi-buffer-config-change-list))
 
 (define-record-type <xi-op>
   (make-xi-op type count lines ln)
@@ -275,42 +263,10 @@ available_themes {\"themes\": [\"InspiredGitHub\"]}"
   (make-xi-available-themes (or (assoc-ref result "themes") #())))
 
 (define-record-type <xi-buffer-config-change>
-  (make-xi-buffer-config-change
-   wrap-width word-wrap use-tab-stops
-   translate-tabs-to-spaces tab-size surrounding-pairs
-   scroll-past-end save-with-newline plugin-search-path
-   line-ending font-size font-face
-   autodetect-whitespace auto-indent)
+  (make-xi-buffer-config-change list)
   xi-buffer-config-change?
-  (wrap-width xi-buffer-config-change-wrap-width)
-  (word-wrap xi-buffer-config-change-word-wrap)
-  (use-tab-stops xi-buffer-config-change-use-tab-stops)
-  (translate-tabs-to-spaces xi-buffer-config-change-translate-tabs-to-spaces)
-  (tab-size xi-buffer-config-change-tab-size)
-  (surrounding-pairs xi-buffer-config-change-surrounding-pairs)
-  (scroll-past-end xi-buffer-config-change-scroll-past-end)
-  (save-with-newline xi-buffer-config-change-save-with-newline)
-  (plugin-search-path xi-buffer-config-change-plugin-search-path)
-  (line-ending xi-buffer-config-change-line-ending)
-  (font-size xi-buffer-config-change-font-size)
-  (font-face xi-buffer-config-change-font-face)
-  (autodetect-whitespace xi-buffer-config-change-autodetect-whitespace)
-  (auto-indent xi-buffer-config-change-auto-indent))
+  (list xi-buffer-config-change-list))
 
 (define (parse-xi-buffer-config-change result)
   "Parse a deserialized json RESULT into a xi-buffer-config-change record."
-  (make-xi-buffer-config-change
-   (assoc-ref result "wrap_width")
-   (assoc-ref result "word_wrap")
-   (assoc-ref result "use_tab_stops")
-   (assoc-ref result "translate_tabs_to_spaces")
-   (assoc-ref result "tab_size")
-   (assoc-ref result "surrounding_pairs")
-   (assoc-ref result "scroll_past_end")
-   (assoc-ref result "save_with_newline")
-   (assoc-ref result "plugin_search_path")
-   (assoc-ref result "line_ending")
-   (assoc-ref result "font_size")
-   (assoc-ref result "font_face")
-   (assoc-ref result "autodetect_whitespace")
-   (assoc-ref result "auto_indent")))
+  (make-xi-buffer-config-change result))

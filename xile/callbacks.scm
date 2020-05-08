@@ -38,7 +38,11 @@
     (xile-register-callback
      'config_changed
      (lambda (result)
-       (format #t "config_changed unimplemented !~%")))
+       (let* ((view_id (assoc-ref result "view_id"))
+              (xile-buffer (find-xile-buffer (string->symbol view_id))))
+         (format #t "config_changed : xile-buffer for ~a is ~a~%" view_id xile-buffer)
+         (when xile-buffer
+           ((xile-buffer 'cb-config-changed) (parse-xi-buffer-config-change result))))))
 
     (xile-register-callback
      'available_themes
