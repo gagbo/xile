@@ -4,6 +4,7 @@
   #:use-module (xile json-rpc)
   #:use-module (xile curses-window)
   #:use-module (xile backend-notifications)
+  #:use-module (xile variables)
   #:export (register-default-callbacks))
 
 (define (register-default-callbacks)
@@ -42,7 +43,8 @@
     (xile-register-callback
      'available_themes
      (lambda (result)
-       (format #t "available_themes unimplemented !~%")))
+       (set! themes-available (xi-available-themes-list (parse-xi-available-themes result)))
+       (format #t "available_themes set to ~a ~%" themes-available)))
 
     (xile-register-callback
      'available_plugins
@@ -52,4 +54,5 @@
     (xile-register-callback
      'available_languages
      (lambda (result)
-       (format #t "available_languages unimplemented !~%")))))
+       (set! languages-available (xi-available-languages-list (parse-xi-available-languages result)))
+       (format #t "available_languages set to ~a ~%" languages-available)))))
