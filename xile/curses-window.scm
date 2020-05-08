@@ -6,6 +6,7 @@
   #:use-module (xile backend-notifications)
   #:use-module (xile line-cache)
   #:use-module (xile buffer-state)
+  #:use-module (xile variables)
   #:use-module (ncurses curses)
   #:use-module (ice-9 futures)
   #:use-module (ice-9 threads)
@@ -22,7 +23,7 @@
 
 (define (make-xile-header)
   "Return a window suitable for a Xile header."
-  (let* ((height 1)
+  (let* ((height header-height)
          (width (- (cols) 10))
          (startx 5)
          (starty 0))
@@ -34,7 +35,7 @@
 
 (define (make-xile-footer)
   "Return a window suitable for a Xile footer."
-  (let* ((height 2)
+  (let* ((height footer-height)
          (width 0)
          (startx 0)
          (starty (- (lines) height)))
