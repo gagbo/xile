@@ -25,6 +25,9 @@ support, it is as simple as
 ./xile.scm
 #+END_SRC
 
+By default it will load a user config located in this repo in =config/xile.scm=.
+It's hardcoded for now but hopefully will be configurable later.
+
 ** Test script
 For the time being we are just opening this README file to see how it's
 displayed.
