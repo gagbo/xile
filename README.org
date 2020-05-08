@@ -55,6 +55,9 @@ version of ncurses library.
 - [X] Move cursor ::
 - [X] User config as scheme ::
 - [X] Xile state (buffer local and session-global variables) ::
+- [ ] Implement the [[https://xi-editor.io/docs/frontend-protocol.html][complete protocol]] :: That is
+  1) front -> back serializing, and
+  2) back -> front parsing + callbacks
 - [ ] Proper header/footer :: I want to decouple buffer from its curses window, and
   have the curses-window module actually handle all of header, footer, and main
   window together
