@@ -47,12 +47,16 @@ only dependency currently needed which is not in guix packages is the guile3.0
 version of ncurses library.
 
 * Roadmap
-- [ ] Move cursor
-- [ ] Scroll window
+- [X] Display buffer
+- [X] Scroll window
+- [X] Move cursor
+- [X] User config as scheme
+- [X] Xile state (buffer local and session-global variables)
 - [ ] Proper header/footer
+- [ ] Editor states (command and insert at least)
+- [ ] Scheme evaluator on =:=
 - [ ] Edit file
 - [ ] Syntax Highlighting (using xi-core bundled syntect)
-- [ ] Editor states (command and insert at least)
 
 * Objectives
 
