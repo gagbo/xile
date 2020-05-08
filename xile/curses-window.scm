@@ -202,6 +202,11 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
           (with-mutex bufstate-guard
             (xile-buffer-getvar bufstate name)))
 
+        (define (set-local-variable! name value)
+          "Set the buffer-local variable NAME to VALUE."
+          (with-mutex bufstate-guard
+            (xile-buffer-setvar! bufstate name value)))
+
         (define (cb-scroll-to scroll-to)
           "Callback to handle scroll_to message y x from Xi."
           (let ((line (xi-scroll-to-line scroll-to))
@@ -230,6 +235,7 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
             (cond ((eq? m 'get-bufstate) bufstate)
                   ((eq? m 'get-win) (xile-buffer-state-bufwin bufstate))
                   ((eq? m 'get-var) get-local-variable)
+                  ((eq? m 'set-var!) set-local-variable!)
                   ((eq? m 'create-view) create-view)
                   ((eq? m 'scroll) scroll)
                   ((eq? m 'scroll-view-up) scroll-view-up)
