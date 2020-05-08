@@ -4,10 +4,12 @@
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-9)
   #:use-module (srfi srfi-43)
+  #:use-module (xile themes)
   #:export (parse-xi-update
             parse-xi-line
             parse-xi-op
             parse-xi-scroll-to
+            parse-xi-measure-width
             xi-op?
             xi-op-type
             xi-op-count
@@ -30,7 +32,10 @@
             xi-scroll-to?
             make-xi-scroll-to
             xi-scroll-to-line
-            xi-scroll-to-col))
+            xi-scroll-to-col
+            make-xi-measure-width
+            xi-measure-width-id
+            xi-measure-width-strings))
 
 (define-record-type <xi-op>
   (make-xi-op type count lines ln)
@@ -186,7 +191,36 @@ point in the future. "
 (define (parse-xi-scroll-to result)
   "Parse a deserialize json RESULT into a xi-scroll-to record
 
-scroll_to: [number, number]  // line, column (in utf-8 code units) "
+scroll_to: {\"line\": number, \"col\": number} // line, column (in utf-8 code units) "
   (let ((line (assoc-ref result "line"))
         (col (assoc-ref result "col")))
     (make-xi-scroll-to line col)))
+
+(define-record-type <xi-measure-width>
+  (make-xi-measure-width id strings)
+  xi-measure-width?
+  (id xi-measure-width-id)
+  (strings xi-measure-width-strings))
+
+(define (parse-xi-measure-width result)
+  "Parse a deserialized json RESULT into a xi-measure-width request record
+
+measure_width [{\"id\": number, \"strings\": string[]}] <- {\"id\":0, \"result\":[[28.0,8.0]]} "
+  (let ((id (assoc-ref result "id"))
+        (strings (assoc-ref result "strings")))
+    (make-xi-measure-width id strings)))
+
+(define-record-type <xi-theme-changed>
+  (make-xi-theme-changed name settings)
+  xi-theme-changed?
+  (name xi-theme-changed-name)
+  (settings xi-theme-changed-settings))
+
+(define (parse-xi-theme-changed result)
+  "Parse a deserialized json RESULT into a xi-theme-changed record.
+
+theme_changed {\"name\": \"InspiredGitHub\", \"theme\": Theme}
+The Theme object is directly serialized from a syntect::highlighting::ThemeSettings instance. "
+  (let ((name (assoc-ref result "name"))
+        (settings (parse-syntect-theme-settings (assoc-ref result "theme"))))
+    (make-xi-theme-changed name settings)))
