@@ -49,11 +49,15 @@
       (set-current-error-port (open "logs/xile-err.log" (logior O_APPEND O_CREAT O_WRONLY)))
       (set-current-output-port (open "logs/xile-out.log" (logior O_APPEND O_CREAT O_WRONLY)))
 
+      ;; Register the default callbacks before sending the init message
+      ;; (otherwise we might receive notifications before callbacks are
+      ;; registered, like available_languages notification)
+      (register-default-callbacks)
+
       ;; Xi init code
       (xile-rpc-send port-to-xi send-mutex (xile-msg-init))
 
       (begin
-        (register-default-callbacks)
         ;; HACK open / manipulate file
         (define first-buffer (make-xile-buffer port-to-xi send-mutex first-file))
         ((first-buffer 'create-view))
