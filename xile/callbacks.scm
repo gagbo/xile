@@ -74,6 +74,33 @@
            ((xile-buffer 'cb-available-plugins) (parse-xi-buffer-available-plugins result))))))
 
     (xile-register-callback
+     'plugin_started
+     (lambda (result)
+       (let* ((view_id (assoc-ref result "view_id"))
+              (xile-buffer (find-xile-buffer (string->symbol view_id))))
+         (format #t "plugin_stopped : xile-buffer for ~a is ~a~%" view_id xile-buffer)
+         (when xile-buffer
+           ((xile-buffer 'cb-plugin-started) (parse-xi-plugin-started result))))))
+
+    (xile-register-callback
+     'plugin_stopped
+     (lambda (result)
+       (let* ((view_id (assoc-ref result "view_id"))
+              (xile-buffer (find-xile-buffer (string->symbol view_id))))
+         (format #t "plugin_stopped : xile-buffer for ~a is ~a~%" view_id xile-buffer)
+         (when xile-buffer
+           ((xile-buffer 'cb-plugin-stopped) (parse-xi-plugin-stopped result))))))
+
+    (xile-register-callback
+     'update_cmds
+     (lambda (result)
+       (let* ((view_id (assoc-ref result "view_id"))
+              (xile-buffer (find-xile-buffer (string->symbol view_id))))
+         (format #t "update_cmds : xile-buffer for ~a is ~a~%" view_id xile-buffer)
+         (when xile-buffer
+           ((xile-buffer 'cb-update-cmds) (parse-xi-update-cmds result))))))
+
+    (xile-register-callback
      'available_languages
      (lambda (result)
        (set! languages-available (xi-available-languages-list (parse-xi-available-languages result)))

@@ -108,7 +108,7 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
            (bufwin-guard (xile-buffer-state-win-guard bufstate))
            (bufstate-guard (xile-buffer-state-guard bufstate)))
 
-      (define dispatch #f)    ; dispatch acts as "this" in OOP-languages
+      (define dispatch #f)            ; dispatch acts as "this" in OOP-languages
 
       ;; TODO : Refactor the notification sending out of buffer.
       ;; This is the most stateless part we can start with.
@@ -225,6 +225,40 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
         (with-mutex bufstate-guard
           (xile-buffer-setvar! bufstate "plugins" (xi-buffer-available-plugins-list buffer-available-plugins))))
 
+      (define (cb-plugin-started plugin-start)
+        "Callback to handle plugin_started message PLUGIN-START from Xi."
+        (with-mutex bufstate-guard
+          (let* ((old-plugins (xile-buffer-getvar bufstate "plugins"))
+                 (name (xi-buffer-plugin-started-name plugin-start))
+                 (old-plugin-alist (assoc-ref old-plugins name)))
+            (xile-buffer-setvar! bufstate "plugins"
+                                 (assoc-set! old-plugins name (assoc-set! old-plugin-alist "running" #t))))))
+
+      (define (plugin-state name)
+        "Return the state of plugin NAME in current buffer."
+        (with-mutex bufstate-guard
+          (assoc-ref (xile-buffer-getvar bufstate "plugins") name)))
+
+      (define (cb-plugin-stopped plugin-stopped)
+        "Callback to handle plugin_stopped message PLUGIN-STOPPED from Xi."
+        (with-mutex bufstate-guard
+          (let* ((old-plugins (xile-buffer-getvar bufstate "plugins"))
+                 (name (xi-buffer-plugin-stopped-name plugin-stopped))
+                 (code (xi-buffer-plugin-stopped-code plugin-stopped))
+                 (old-plugin-alist (assoc-ref old-plugins name))
+                 (new-plugin-alist (assoc-set! (assoc-set! old-plugin-alist "running" #f) "last-code" code)))
+            (xile-buffer-setvar! bufstate "plugins" new-plugin-alist))))
+
+      (define (cb-update-cmds update-cmds)
+        "Callback to handle update-cmds message UPDATE-CMDS from Xi."
+        (with-mutex bufstate-guard
+          (let* ((old-plugins (xile-buffer-getvar bufstate "plugins"))
+                 (name (xi-buffer-update-cmds-name update-cmds))
+                 (list (xi-buffer-update-cmds-list update-cmds))
+                 (old-plugin-alist (assoc-ref old-plugins name))
+                 (new-plugin-alist (assoc-set! old-plugin-alist "cmds" list)))
+            (xile-buffer-setvar! bufstate "plugins" new-plugin-alist))))
+
       (define (cb-update result)
         "Callback to handle update message RESULT from Xi."
         (with-mutex bufstate-guard
@@ -252,6 +286,10 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
                 ((eq? m 'cb-config-changed) cb-config-changed)
                 ((eq? m 'cb-language-changed) cb-language-changed)
                 ((eq? m 'cb-available-plugins) cb-available-plugins)
+                ((eq? m 'cb-plugin-started) cb-plugin-started)
+                ((eq? m 'cb-plugin-stopped) cb-plugin-stopped)
+                ((eq? m 'cb-update-cmds) cb-update-cmds)
+                ((eq? m 'plugin-state) plugin-state)
                 (else (error (format #f "Unknown request : MAKE-XILE-BUFFER ~a~%" m))))))
 
       dispatch))

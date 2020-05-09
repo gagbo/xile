@@ -16,6 +16,9 @@
             parse-xi-buffer-config-change
             parse-xi-buffer-language-change
             parse-xi-buffer-available-plugins
+            parse-xi-plugin-started
+            parse-xi-plugin-stopped
+            parse-xi-update-cmds
             xi-op?
             xi-op-type
             xi-op-count
@@ -55,7 +58,15 @@
             xi-buffer-language-change?
             xi-buffer-language-change-id
             xi-buffer-available-plugins?
-            xi-buffer-available-plugins-list))
+            xi-buffer-available-plugins-list
+            xi-buffer-plugin-started?
+            xi-buffer-plugin-started-name
+            xi-buffer-plugin-stopped?
+            xi-buffer-plugin-stopped-name
+            xi-buffer-plugin-stopped-code
+            xi-buffer-update-cmds?
+            xi-buffer-update-cmds-list
+            xi-buffer-update-cmds-name))
 
 (define-record-type <xi-op>
   (make-xi-op type count lines ln)
@@ -289,8 +300,86 @@ available_themes {\"themes\": [\"InspiredGitHub\"]}"
 (define-record-type <xi-buffer-available-plugins>
   (make-xi-buffer-available-plugins plugins)
   xi-buffer-available-plugins?
-  (plugins xi-buffer-available-plugins-list))
+  (plugins xi-buffer-available-plugins-list)) ; alist (name . ((running . boolean) (cmds . (Commands)))
 
 (define (parse-xi-buffer-available-plugins result)
-  "Parse a deserialized json RESULT into a xi-buffer-available-plugins record."
-  (make-xi-buffer-available-plugins (or (assoc-ref result "plugins") '())))
+  "Parse a deserialized json RESULT into a xi-buffer-available-plugins record.
+
+available_plugins {\"view_id\": \"view-id-1\", \"plugins\": [{\"name\": \"syntect\", \"running\": true]}"
+  (let* ((plugin-list (or (assoc-ref result "plugins") '()))
+         (plugin-alist                   ; Format the plugin-list into an alist of (name . running)
+          (fold (lambda (new acc)
+                  (assoc-set! acc
+                              (assoc-ref new "name")
+                              (acons "running" (assoc-ref new "running") '())))
+                '() plugin-list)))
+    (make-xi-buffer-available-plugins plugin-alist)))
+
+(define-record-type <xi-buffer-plugin-started>
+  (make-xi-buffer-plugin-started name)
+  xi-buffer-plugin-started?
+  (name xi-buffer-plugin-started-name))
+
+(define (parse-xi-plugin-started result)
+  "Parse a deserialized json RESULT into a xi-buffer-plugin-started.
+
+plugin_started {\"view_id\": \"view-id-1\", \"plugin\": \"syntect\"}"
+  (make-xi-buffer-plugin-started (assoc-ref result "name")))
+
+(define-record-type <xi-buffer-plugin-stopped>
+  (make-xi-buffer-plugin-stopped name code)
+  xi-buffer-plugin-stopped?
+  (name xi-buffer-plugin-stopped-name)
+  (code xi-buffer-plugin-stopped-code))
+
+(define (parse-xi-plugin-stopped result)
+  "Parse a deserialized json RESULT into a xi-buffer-plugin-stopped.
+
+plugin_stopped {\"view_id\": \"view-id-1\", \"plugin\": \"syntect\", \"code\" 101}"
+  (make-xi-buffer-plugin-started (assoc-ref result "name") (assoc-ref result "code")))
+
+(define-record-type <xi-buffer-update-cmds>
+  (make-xi-buffer-update-cmds name list)
+  xi-buffer-update-cmds?
+  (name xi-buffer-update-cmds-name)
+  (list xi-buffer-update-cmds-list))
+
+(define (parse-xi-update-cmds result)
+  "Parse a deserialized json RESULT into a xi-buffer-update-cmds.
+
+update_cmds {\"view_id\": \"view-id-1\", \"plugin\", \"syntect\", \"cmds\": [Command]}
+
+{
+        \"title\": \"Test Command\",
+        \"description\": \"Passes the current test\",
+        \"rpc_cmd\": {
+            \"rpc_type\": \"notification\",
+            \"method\": \"test.cmd\",
+            \"params\": {
+                \"view\": \"\",
+                \"non_arg\": \"plugin supplied value\",
+                \"arg_one\": \"\",
+                \"arg_two\": \"\"
+            }
+        },
+        \"args\": [
+            {
+                \"title\": \"First argument\",
+                \"description\": \"Indicates something\",
+                \"key\": \"arg_one\",
+                \"arg_type\": \"Bool\"
+            },
+            {
+                \"title\": \"Favourite Number\",
+                \"description\": \"A number used in a test.\",
+                \"key\": \"arg_two\",
+                \"arg_type\": \"Choice\",
+                \"options\": [
+                    {\"title\": \"Five\", \"value\": 5},
+                    {\"title\": \"Ten\", \"value\": 10}
+                ]
+            }
+        ]
+    }
+"
+  (make-xi-buffer-update-cmds (assoc-ref result "plugin") (assoc-ref result "cmds")))
