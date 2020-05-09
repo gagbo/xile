@@ -1,9 +1,7 @@
 #!/usr/bin/env -S guile --no-auto-compile -s
 !#
 
-(load "../xile/message.scm")
-(load "../xile/backend-notifications.scm")
-(load "../xile/line-cache.scm")
+(add-to-load-path (dirname (dirname (current-filename))))
 
 (use-modules (srfi srfi-64)
              (xile line-cache)

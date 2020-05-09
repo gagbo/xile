@@ -1,7 +1,7 @@
 #!/usr/bin/env -S guile --no-auto-compile -s
 !#
 
-(load "../xile/message.scm")
+(add-to-load-path (dirname (dirname (current-filename))))
 
 (use-modules (srfi srfi-64)
              (xile message))

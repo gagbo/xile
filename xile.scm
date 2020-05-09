@@ -1,7 +1,7 @@
 #!/usr/bin/env -S guile -e main -s
 !#
 ;; coding: utf-8
-(add-to-load-path (dirname (or (current-filename) ".")))
+(add-to-load-path (dirname (current-filename)))
 (use-modules (ncurses curses)
              (ice-9 threads) ;; For the join-thread in main
              (xile message)
