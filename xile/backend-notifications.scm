@@ -308,7 +308,7 @@ available_themes {\"themes\": [\"InspiredGitHub\"]}"
 available_plugins {\"view_id\": \"view-id-1\", \"plugins\": [{\"name\": \"syntect\", \"running\": true]}"
   (let* ((plugin-list (or (assoc-ref result "plugins") '()))
          (plugin-alist                   ; Format the plugin-list into an alist of (name . running)
-          (fold (lambda (new acc)
+          (vector-fold (lambda (_ acc new)
                   (assoc-set! acc
                               (assoc-ref new "name")
                               (acons "running" (assoc-ref new "running") '())))
@@ -336,7 +336,7 @@ plugin_started {\"view_id\": \"view-id-1\", \"plugin\": \"syntect\"}"
   "Parse a deserialized json RESULT into a xi-buffer-plugin-stopped.
 
 plugin_stopped {\"view_id\": \"view-id-1\", \"plugin\": \"syntect\", \"code\" 101}"
-  (make-xi-buffer-plugin-started (assoc-ref result "name") (assoc-ref result "code")))
+  (make-xi-buffer-plugin-stopped (assoc-ref result "name") (assoc-ref result "code")))
 
 (define-record-type <xi-buffer-update-cmds>
   (make-xi-buffer-update-cmds name list)

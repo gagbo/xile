@@ -102,27 +102,27 @@
 
     (xile-register-callback
      'add_status_item
-     (let ((key (assoc-ref result "key"))
-           (align (assoc-ref result "alignment"))
-           (source (assoc-ref result "source"))
-           (value (assoc-ref result "value")))
-       (lambda (result)
+     (lambda (result)
+       (let ((key (assoc-ref result "key"))
+             (align (assoc-ref result "alignment"))
+             (source (assoc-ref result "source"))
+             (value (assoc-ref result "value")))
          (set! status-bar (assoc-set! status-bar key `((alignment . ,(string->symbol align)) (source . ,source) (value . ,value)))))))
 
     (xile-register-callback
      'update_status_item
-     (let* ((key (assoc-ref result "key"))
-            (value (assoc-ref result "value"))
-            (old-status-item (assoc-ref status-bar key))
-            (new-status-item (assoc-set! old-status-item 'value value)))
-       (lambda (result)
+     (lambda (result)
+       (let* ((key (assoc-ref result "key"))
+              (value (assoc-ref result "value"))
+              (old-status-item (assoc-ref status-bar key))
+              (new-status-item (assoc-set! old-status-item 'value value)))
          (set! status-bar (assoc-set! status-bar key new-status-item)))))
 
     (xile-register-callback
      'remove_status_item
-     (let* ((key (assoc-ref result "key")))
        (lambda (result)
-         (set! status-bar (assoc-remove! status-bar key)))))
+         (let ((key (assoc-ref result "key")))
+           (set! status-bar (assoc-remove! status-bar key)))))
 
     (xile-register-callback
      'available_languages
