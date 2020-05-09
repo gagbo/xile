@@ -25,14 +25,14 @@
 (define (encode-key-to-string-sequence ch)
   "Convert a key CH coming from `getch' to a string sequence.
 
-Control-key is translated to \\C-key (backslash necessary for the keymaps as well).
-Alt-key is translated to \\M-key.
-Actual \\ is encoded as \\\\.
-Special keys (like KEY_DOWN) or (KEY_PPAGE) are encoded as \\[DOWN] or \\[PPAGE].
-Space is encoded as \\[SPC].
+Control-key is translated to [C-key] (brackets necessary for the keymaps as well).
+Alt-key is translated to [M-key].
+Actual [ is encoded as [[.
+Special keys (like KEY_DOWN) or (KEY_PPAGE) are encoded as [DOWN] or [PPAGE].
+Space is encoded as [SPC].
 
 Since the keymap will just look for the concatenation of the keys in its hash-table, there is no
-need to make a special treatment otherwise. The backslash format is only use to disambiguate
+need to make a special treatment otherwise. The bracket format is only use to disambiguate
 Control-M from hitting C then - then M."
   ch)
 
