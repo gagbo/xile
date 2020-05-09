@@ -14,17 +14,26 @@
   (encode-key-to-string-sequence #\q))
 
 (test-equal "Encode shift letter"
-  "Q"
-  (encode-key-to-string-sequence #\Q))
+  "L"
+  (encode-key-to-string-sequence #\L))
 
 (test-equal "Encode special key"
   "[DOWN]"
   (encode-key-to-string-sequence KEY_DOWN))
 
+(test-equal "Encode C0 control characters"
+  "[RET]"
+  (encode-key-to-string-sequence #\cr))
+
 ;; TODO : Find out what's sent on C-key and M-key
 ;; (test-equal "Encode control letter"
-;;   "\\[C-d]"
-;;   (encode-key-to-string-sequence "^Q"))
+;;   "[C-d]"
+;;   (encode-key-to-string-sequence "^D"))
+
+;; TODO : Find out what's sent on C-key and M-key
+;; (test-equal "Encode control letter"
+;;   "[M-x]"
+;;   (encode-key-to-string-sequence "^[X"))
 
 (test-end "encode-keys")
 
