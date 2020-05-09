@@ -84,6 +84,8 @@
 
          (else
           (clear-footer-text xile-footer)
+          (when debug-key-presses
+            (format #t "Key press : received ~a~%" ch))
           (addstr xile-footer (format #f "Press q to quit (you pressed ~a)" ch) #:y 1 #:x 0)
           (refresh xile-footer)
           (loop (getch (first-buffer 'get-win)))))))

@@ -6,3 +6,4 @@
 (set! first-file "README.org")
 (set! debug-line-cache #f)
 (set! debug-incoming-messages #f)
+(set! debug-key-presses #t)

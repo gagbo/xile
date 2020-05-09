@@ -14,6 +14,7 @@
             id-to-buffer-guard
             debug-line-cache
             debug-incoming-messages
+            debug-key-presses
             listener-stdout
             listener-stderr))
 
@@ -43,6 +44,9 @@
 
 ;; When #t, display incoming messages debugging information
 (define-once debug-incoming-messages #f)
+
+;; When #t, display key presses in the log
+(define-once debug-key-presses #f)
 
 ;; Path to the file containing the stdout of listener process
 (define-once listener-stdout "logs/xile-listen-out.log")
