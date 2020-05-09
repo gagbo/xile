@@ -33,7 +33,11 @@
     (xile-register-callback
      'language_changed
      (lambda (result)
-       (format #t "language_changed unimplemented !~%")))
+       (let* ((view_id (assoc-ref result "view_id"))
+              (xile-buffer (find-xile-buffer (string->symbol view_id))))
+         (format #t "language_changed : xile-buffer for ~a is ~a~%" view_id xile-buffer)
+         (when xile-buffer
+           ((xile-buffer 'cb-language-changed) (parse-xi-buffer-language-change result))))))
 
     (xile-register-callback
      'config_changed
@@ -53,7 +57,11 @@
     (xile-register-callback
      'available_plugins
      (lambda (result)
-       (format #t "available_plugins unimplemented !~%")))
+       (let* ((view_id (assoc-ref result "view_id"))
+              (xile-buffer (find-xile-buffer (string->symbol view_id))))
+         (format #t "available_plugins : xile-buffer for ~a is ~a~%" view_id xile-buffer)
+         (when xile-buffer
+           ((xile-buffer 'cb-available-plugins) (parse-xi-buffer-available-plugins result))))))
 
     (xile-register-callback
      'available_languages

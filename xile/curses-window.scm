@@ -215,6 +215,16 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
         (with-mutex bufstate-guard
           (xile-buffer-apply-config-change bufstate buffer-config-changes)))
 
+      (define (cb-language-changed buffer-language-change)
+        "Callback to handle config_changed message BUFFER-LANGUAGE-CHANGE from Xi."
+        (with-mutex bufstate-guard
+          (xile-buffer-setvar! bufstate "language_id" (xi-buffer-language-change-id buffer-language-change))))
+
+      (define (cb-available-plugins buffer-available-plugins)
+        "Callback to handle config_changed message BUFFER-AVAILABLE-PLUGINS from Xi."
+        (with-mutex bufstate-guard
+          (xile-buffer-setvar! bufstate "plugins" (xi-buffer-available-plugins-list buffer-available-plugins))))
+
       (define (cb-update result)
         "Callback to handle update message RESULT from Xi."
         (with-mutex bufstate-guard
@@ -240,6 +250,8 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
                 ((eq? m 'cb-scroll-to) cb-scroll-to)
                 ((eq? m 'cb-update) cb-update)
                 ((eq? m 'cb-config-changed) cb-config-changed)
+                ((eq? m 'cb-language-changed) cb-language-changed)
+                ((eq? m 'cb-available-plugins) cb-available-plugins)
                 (else (error (format #f "Unknown request : MAKE-XILE-BUFFER ~a~%" m))))))
 
       dispatch))

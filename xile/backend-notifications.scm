@@ -14,6 +14,8 @@
             parse-xi-available-languages
             parse-xi-available-themes
             parse-xi-buffer-config-change
+            parse-xi-buffer-language-change
+            parse-xi-buffer-available-plugins
             xi-op?
             xi-op-type
             xi-op-count
@@ -49,7 +51,11 @@
             xi-available-themes?
             xi-available-themes-list
             xi-buffer-config-change?
-            xi-buffer-config-change-list))
+            xi-buffer-config-change-list
+            xi-buffer-language-change?
+            xi-buffer-language-change-id
+            xi-buffer-available-plugins?
+            xi-buffer-available-plugins-list))
 
 (define-record-type <xi-op>
   (make-xi-op type count lines ln)
@@ -270,3 +276,21 @@ available_themes {\"themes\": [\"InspiredGitHub\"]}"
 (define (parse-xi-buffer-config-change result)
   "Parse a deserialized json RESULT into a xi-buffer-config-change record."
   (make-xi-buffer-config-change (or (assoc-ref result "changes") '())))
+
+(define-record-type <xi-buffer-language-change>
+  (make-xi-buffer-language-change new-id)
+  xi-buffer-language-change?
+  (new-id xi-buffer-language-change-id))
+
+(define (parse-xi-buffer-language-change result)
+  "Parse a deserialized json RESULT into a xi-buffer-language-change record."
+  (make-xi-buffer-language-change (or (assoc-ref result "language_id") "")))
+
+(define-record-type <xi-buffer-available-plugins>
+  (make-xi-buffer-available-plugins plugins)
+  xi-buffer-available-plugins?
+  (plugins xi-buffer-available-plugins-list))
+
+(define (parse-xi-buffer-available-plugins result)
+  "Parse a deserialized json RESULT into a xi-buffer-available-plugins record."
+  (make-xi-buffer-available-plugins (or (assoc-ref result "plugins") '())))
