@@ -10,7 +10,9 @@
             header-height
             footer-height
             id-to-buffer
-            id-to-buffer-guard))
+            id-to-buffer-guard
+            debug-line-cache
+            debug-incoming-messages))
 
 ;; The first file to open with Xile
 (define first-file "not README.org")
@@ -32,3 +34,9 @@
 
 ;; Id to buffer mutex
 (define id-to-buffer-guard (make-mutex))
+
+;; When #t, display line-cache debugging information
+(define debug-line-cache #f)
+
+;; When #t, display incoming messages debugging information
+(define debug-incoming-messages #f)

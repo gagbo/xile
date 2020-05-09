@@ -3,6 +3,7 @@
 (define-module (xile line-cache)
   #:use-module (xile message)
   #:use-module (xile backend-notifications)
+  #:use-module (xile variables)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-9)
   #:use-module (srfi srfi-43)
@@ -69,25 +70,30 @@ done in-place than by copying from the old state to the new]. "
     (cond
      ((eq? type 'ins)
       (let ((new-cache (xi-line-cache-handle-update-ins cache op)))
-        (format (current-error-port) "After ins : ~%~y~%" new-cache)
+        (when debug-line-cache
+          (format (current-error-port) "After ins : ~%~y~%" new-cache))
         new-cache))
      ((eq? type 'invalidate)
       (let ((new-cache (xi-line-cache-handle-update-invalidate cache op)))
-        (format (current-error-port) "After invalidate : ~%~y~%" new-cache)
+        (when debug-line-cache
+          (format (current-error-port) "After invalidate : ~%~y~%" new-cache))
         new-cache))
      ((eq? type 'copy)
       (let ((new-cache (xi-line-cache-handle-update-copy cache op)))
-        (format (current-error-port) "After copy : ~%~y~%" new-cache)
+        (when debug-line-cache
+          (format (current-error-port) "After copy : ~%~y~%" new-cache))
         new-cache))
      ((eq? type 'skip)
       (let ((new-cache (xi-line-cache-handle-update-skip cache op)))
-        (format (current-error-port) "After skip : ~%~y~%" new-cache)
+        (when debug-line-cache
+          (format (current-error-port) "After skip : ~%~y~%" new-cache))
         new-cache))
      ((eq? type 'update)
       (let ((new-cache (xi-line-cache-handle-update-update cache op)))
-        (format (current-error-port) "After update : ~%~y~%" new-cache)
+        (when debug-line-cache
+          (format (current-error-port) "After update : ~%~y~%" new-cache))
         new-cache))
-     (else (format (current-error-port) "Unknown update type : ~a~%" type)
+     (else (when debug-line-cache (format (current-error-port) "Unknown update type : ~a~%" type))
            cache))))
 
 (define (xi-line-cache-handle-update-update cache update)

@@ -1,6 +1,7 @@
 ;; coding: utf-8
 
 (define-module (xile json-rpc)
+  #:use-module (xile variables)
   #:use-module (json)
   #:use-module (ice-9 popen)
   #:use-module (ice-9 suspendable-ports)
@@ -120,10 +121,11 @@ Message type is either :
   (set! xile-rpc-dispatch (lambda (message)
                             "Dispatch a received MESSAGE to the correct callback."
                              ;; Example of notification :
-                             (format (current-error-port) "Just received message : ~%~
+                            (when debug-incoming-messages
+                              (format (current-error-port) "Just received message : ~%~
                                                            ----------------------------~%~
                                                            ~y~
-                                                           ----------------------------~%" message)
+                                                           ----------------------------~%" message))
                              (let ((message-id (assoc-ref message "id"))
                                    (message-result (assoc-ref message "result"))
                                    (notif-method (if (assoc-ref message "method") (string->symbol (assoc-ref message "method")) #f))
