@@ -17,34 +17,34 @@
             listener-stderr))
 
 ;; The first file to open with Xile
-(define first-file "not README.org")
+(define-once first-file "not README.org")
 
 ;; The list of available languages
-(define languages-available #())
+(define-once languages-available #())
 
 ;; The list of available themes
-(define themes-available #())
+(define-once themes-available #())
 
 ;; Height of the header
-(define header-height 1)
+(define-once header-height 1)
 
 ;; Height of the footer
-(define footer-height 2)
+(define-once footer-height 2)
 
 ;; Id to Buffer hashtable
-(define id-to-buffer (make-hash-table 31))
+(define-once id-to-buffer (make-hash-table 31))
 
 ;; Id to buffer mutex
-(define id-to-buffer-guard (make-mutex))
+(define-once id-to-buffer-guard (make-mutex))
 
 ;; When #t, display line-cache debugging information
-(define debug-line-cache #f)
+(define-once debug-line-cache #f)
 
 ;; When #t, display incoming messages debugging information
-(define debug-incoming-messages #f)
+(define-once debug-incoming-messages #f)
 
 ;; Path to the file containing the stdout of listener process
-(define listener-stdout "logs/xile-listen-out.log")
+(define-once listener-stdout "logs/xile-listen-out.log")
 
 ;; Path to the file containing the stderr of listener process
-(define listener-stderr "logs/xile-listen-err.log")
+(define-once listener-stderr "logs/xile-listen-err.log")
