@@ -9,6 +9,7 @@
             themes-available
             header-height
             footer-height
+            current-theme
             id-to-buffer
             id-to-buffer-guard
             debug-line-cache
@@ -48,3 +49,6 @@
 
 ;; Path to the file containing the stderr of listener process
 (define-once listener-stderr "logs/xile-listen-err.log")
+
+;; The current theme (see xile-theme record)
+(define-once current-theme #f)

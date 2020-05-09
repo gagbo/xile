@@ -5,6 +5,7 @@
   #:use-module (xile curses-window)
   #:use-module (xile backend-notifications)
   #:use-module (xile variables)
+  #:use-module (xile themes)            ; Only for the 'theme_changed callback
   #:export (register-default-callbacks))
 
 (define (register-default-callbacks)
@@ -49,10 +50,19 @@
            ((xile-buffer 'cb-config-changed) (parse-xi-buffer-config-change result))))))
 
     (xile-register-callback
+     'theme_changed
+     (lambda (result)
+       (let* ((theme-changes (parse-xi-theme-changed result))
+              (new-theme (make-xile-theme (xi-theme-changed-name theme-changes)
+                                          (xi-theme-changed-settings theme-changes))))
+         (set! current-theme new-theme)
+         (format #t "current-theme set to ~a ~%" (xile-theme-name current-theme)))))
+
+    (xile-register-callback
      'available_themes
      (lambda (result)
        (set! themes-available (xi-available-themes-list (parse-xi-available-themes result)))
-       (format #t "available_themes set to ~a ~%" themes-available)))
+       (format #t "themes-available set to ~a ~%" themes-available)))
 
     (xile-register-callback
      'available_plugins
@@ -67,4 +77,4 @@
      'available_languages
      (lambda (result)
        (set! languages-available (xi-available-languages-list (parse-xi-available-languages result)))
-       (format #t "available_languages set to ~a ~%" languages-available)))))
+       (format #t "languages-available set to ~a ~%" languages-available)))))

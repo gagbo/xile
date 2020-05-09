@@ -2,7 +2,10 @@
 
 (define-module (xile themes)
   #:use-module (srfi srfi-9)
-  #:export (parse-syntect-theme-settings
+  #:export (make-xile-theme
+            xile-theme-name
+            xile-theme-settings
+            parse-syntect-theme-settings
             syntext-theme-settings-foreground
             syntext-theme-settings-background
             syntext-theme-settings-caret
@@ -278,3 +281,9 @@ pub struct ThemeSettings {
    (and=> (assoc-ref result "stack_guide") parse-syntect-color)
    (and=> (assoc-ref result "highlight_foreground") parse-syntect-color)
    (and=> (assoc-ref result "shadow") parse-syntect-color)))
+
+(define-record-type <xile-theme>
+  (make-xile-theme name settings)
+  xile-theme?
+  (name xile-theme-name)
+  (settings xile-theme-settings))
