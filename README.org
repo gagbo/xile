@@ -55,13 +55,20 @@ version of ncurses library.
 - [X] Move cursor ::
 - [X] User config as scheme ::
 - [X] Xile state (buffer local and session-global variables) ::
-- [ ] Implement the [[https://xi-editor.io/docs/frontend-protocol.html][complete protocol]] :: That is
+- [X] Implement the [[https://xi-editor.io/docs/frontend-protocol.html][complete protocol]] :: That is
   1) front -> back serializing, and
   2) back -> front parsing + callbacks
+Currently only the ={find,replace}_status= notifications and the =show_hover=
+response message are missing. For the notifications, we will see when we want to
+support it. For the Show Hover message, this needs to be implemented at the
+buffer level ; since the buffer will attach the correct id at runtime and
+register the correct callback.
+- [ ] Keymaps :: holding keymaps to ease the event-loop code is also necessary
+  to have multiple editor states
+- [ ] Editor states (command and insert at least) ::
 - [ ] Proper header/footer :: I want to decouple buffer from its curses window, and
   have the curses-window module actually handle all of header, footer, and main
   window together
-- [ ] Editor states (command and insert at least) ::
 - [ ] Scheme evaluator :: on =:= in a vim-like manner
 - [ ] Edit file ::
   Set the pristing flag correctly and be able to insert characters
