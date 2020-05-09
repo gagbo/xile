@@ -52,3 +52,6 @@
 
 ;; The current theme (see xile-theme record)
 (define-once current-theme #f)
+
+;; The current status
+(define-once status-bar '())
