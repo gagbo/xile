@@ -12,7 +12,9 @@
             id-to-buffer
             id-to-buffer-guard
             debug-line-cache
-            debug-incoming-messages))
+            debug-incoming-messages
+            listener-stdout
+            listener-stderr))
 
 ;; The first file to open with Xile
 (define first-file "not README.org")
@@ -40,3 +42,9 @@
 
 ;; When #t, display incoming messages debugging information
 (define debug-incoming-messages #f)
+
+;; Path to the file containing the stdout of listener process
+(define listener-stdout "logs/xile-listen-out.log")
+
+;; Path to the file containing the stderr of listener process
+(define listener-stderr "logs/xile-listen-err.log")

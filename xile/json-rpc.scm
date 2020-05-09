@@ -53,7 +53,8 @@ Return a list :
 ;; Xile protocol messages deserialization / receiving
 (define (xile-rpc-read port)
   "Consume messages from PORT, parse them, and send them to xile-rpc-dispatch function"
-  (xile-debug-info "waiting for one line")
+  (when debug-incoming-messages
+    (xile-debug-info "waiting for one line"))
   (xile-rpc-dispatch (json->scm port)))
 
 (define (xile-rpc-handler port)
@@ -78,8 +79,8 @@ Return a pair (input-port . output-port) for pipe communication with xi-core pro
 
 (define (xile-listener-thread handler-proc port)
   "Return a thread calling HANDLER-PROC on a given PORT"
-  (parameterize ((current-output-port (open "logs/xile-listen-out.log" (logior O_APPEND O_CREAT O_WRONLY)))
-                 (current-error-port (open "logs/xile-listen-err.log" (logior O_APPEND O_CREAT O_WRONLY))))
+  (parameterize ((current-output-port (open listener-stdout (logior O_APPEND O_CREAT O_WRONLY)))
+                 (current-error-port (open listener-stderr (logior O_APPEND O_CREAT O_WRONLY))))
     (make-thread handler-proc port)))
 
 ;; HACK : Begin a let-binding to share callback registration and fetching.

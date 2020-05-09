@@ -3,4 +3,4 @@
 
 (set! first-file "README.org")
 (set! debug-line-cache #f)
-(set! debug-incoming-messages #t)
+(set! debug-incoming-messages #f)
