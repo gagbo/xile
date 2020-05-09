@@ -34,7 +34,38 @@ Space is encoded as [SPC].
 Since the keymap will just look for the concatenation of the keys in its hash-table, there is no
 need to make a special treatment otherwise. The bracket format is only use to disambiguate
 Control-M from hitting C then - then M."
-  ch)
+  (cond
+   ;; Escaped char
+   ((equal? ch #\[)
+    "[[")
+   ;; Handled special keys
+   ((equal? ch KEY_DOWN)
+    "[DOWN]")
+   ((equal? ch KEY_UP)
+    "[UP]")
+   ((equal? ch KEY_LEFT)
+    "[LEFT]")
+   ((equal? ch KEY_RIGHT)
+    "[RIGHT]")
+   ((equal? ch KEY_PPAGE)
+    "[PPAGE]")
+   ((equal? ch KEY_NPAGE)
+    "[NPAGE]")
+   ((equal? ch #\return)
+    "[RET]")
+   ((equal? ch #\space)
+    "[SPC]")
+   ;; Unhandled special keys
+   ((not (char? ch))
+    ch)
+   ;; Alphas
+   ((and (char<=? ch #\z) (char>=? ch #\a))
+    (format #f "~a" ch))
+   ((and (char<=? ch #\Z) (char>=? ch #\A))
+    (format #f "~a" ch))
+   ;; Unknown land
+   (else
+    ch)))
 
 (define (make-xile-header)
   "Return a window suitable for a Xile header."

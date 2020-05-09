@@ -12,10 +12,10 @@
 (define-once normal-state-keymap
   (alist->hash-table
    '(("q" . quit)
-     ("\\[DOWN]" . move-down)
-     ("\\[UP]" . move-up)
-     ("\\[NPAGE]" . scroll-view-down)
-     ("\\[PPAGE]" . scroll-view-up))))
+     ("[DOWN]" . move-down)
+     ("[UP]" . move-up)
+     ("[NPAGE]" . scroll-view-down)
+     ("[PPAGE]" . scroll-view-up))))
 
 ;; Normal state with its keymap
 (define-once normal-state '(normal . ,normal-state-keymap))

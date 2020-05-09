@@ -25,6 +25,10 @@
   "[RET]"
   (encode-key-to-string-sequence #\cr))
 
+(test-equal "Encode escape char"
+  "[["
+  (encode-key-to-string-sequence #\[))
+
 ;; TODO : Find out what's sent on C-key and M-key
 ;; (test-equal "Encode control letter"
 ;;   "[C-d]"
