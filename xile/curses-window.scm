@@ -19,7 +19,21 @@
             clear-footer-text
             make-xile-header
             update-header
-            make-xile-main))
+            make-xile-main
+            encode-key-to-string-sequence))
+
+(define (encode-key-to-string-sequence ch)
+  "Convert a key CH coming from `getch' to a string sequence.
+
+Control-key is translated to \C-key (backslash necessary for the keymaps as well).
+Alt-key is translated to \M-key.
+Actual \ is encoded as \\ as.
+
+Since the keymap will just look for the concatenation of the keys in its hash-table, there is no
+need to make a special treatment otherwise. The backslash format is only use to disambiguate
+Control-M from hitting C then - then M."
+
+  ch)
 
 (define (make-xile-header)
   "Return a window suitable for a Xile header."
