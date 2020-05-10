@@ -16,6 +16,7 @@
             find-xile-buffer
             make-xile-footer
             update-footer
+            draw-buffer-in-curses
             clear-footer-text
             make-xile-header
             update-header
@@ -126,6 +127,35 @@ Control-M from hitting C then - then M."
          (starty 1))
     (newwin height width starty startx)))
 
+(define (draw-buffer-in-curses buffer window)
+  "Draw the buffer BUFFER in WINDOW and refresh WINDOW (redisplay code)."
+  (let* ((bufstate (buffer 'get-bufstate))
+         (bufwin-guard (xile-buffer-state-win-guard bufstate)))
+    (with-mutex bufwin-guard
+      (let* ((cache (xile-buffer-state-line_cache bufstate))
+             (inv-before (xi-line-cache-invalid_before cache))
+             (inv-after (xi-line-cache-invalid_after cache))
+             (window-lines (getmaxy window))
+             (current-view ((buffer 'current-view))))
+        (format #t "Drawing between ~a and ~a~%" inv-before inv-after)
+        (begin
+          (vector-for-each
+           (lambda (i line)
+             (when (and (>= i inv-before) (< i inv-after))
+               (if (and (xi-line-valid line) (>= (xi-line-ln line) (1+ (car current-view))))
+                   (addstr window
+                           (format #f "~a" (xi-line-text line))
+                           #:y (- (xi-line-ln line) (1+ (car current-view))) #:x 0))))
+           (xi-line-cache-lines (xile-buffer-state-line_cache bufstate)))
+
+          (when (xile-buffer-state-cursor bufstate)
+            (move window
+                  (car (xile-buffer-state-cursor bufstate))
+                  (cdr (xile-buffer-state-cursor bufstate)))))
+
+        ((buffer 'set-clean-display-state))
+        (refresh window)))))
+
 (define (find-xile-buffer view_id)
       "Find a buffer from VIEW_ID. Return #f if VIEW_ID is not registered yet."
       (with-mutex id-to-buffer-guard
@@ -145,14 +175,15 @@ The dispatching of the returned lambda can be checked in source code.
 Opening multiple buffers pointing to the same FILE_PATH is undefined behaviour,
 as of 2020-03-09, xi doesn't handle multiple views of a single file."
     (let* ((bufstate (make-xile-buffer-state
-                      (make-mutex) #f file_path (make-xile-main)
+                      (make-mutex) #f file_path #f
                       (make-mutex) port-to-xi send-mutex #t
                       (make-xi-line-cache #() 0 0) #f '()))
-           (current-view (cons 0 (getmaxy (xile-buffer-state-bufwin bufstate))))
+           (current-view (cons 0 0))
            (to-xi (xile-buffer-state-to-xi bufstate))
            (to-xi-guard (xile-buffer-state-to-xi-guard bufstate))
            (bufwin-guard (xile-buffer-state-win-guard bufstate))
-           (bufstate-guard (xile-buffer-state-guard bufstate)))
+           (bufstate-guard (xile-buffer-state-guard bufstate))
+           (dirty-state #f))
 
       (define dispatch #f)            ; dispatch acts as "this" in OOP-languages
 
@@ -164,6 +195,7 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
 
       (define (scroll min-line max-line)
         "Send Scroll[MIN-LINE MAX-LINE]."
+        (set! current-view (cons min-line max-line))
         (rpc-send-notif (xile-msg-edit-scroll (xile-buffer-state-view_id bufstate) min-line max-line)))
 
       (define* (scroll-view-down #:optional (lines 1))
@@ -191,8 +223,6 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
 
       (define (create-view)
         " \"\" Constructor \"\" => sends a \"new_view\" message and sets the attribute in the callback. "
-        (keypad! (xile-buffer-state-bufwin bufstate) #t)
-        (curs-set 1)
         (let ((msg (xile-msg-new_view #:file_path file_path))
               (wait-for-id (make-condition-variable))
               (guard-wait (make-mutex)))
@@ -212,31 +242,6 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
           (with-mutex id-to-buffer-guard
             (wait-condition-variable wait-for-id id-to-buffer-guard))))
 
-      (define (draw-buffer)
-        "Draw the buffer in its window and refresh the window (redisplay code)."
-        (with-mutex bufwin-guard
-          (let* ((cache (xile-buffer-state-line_cache bufstate))
-                 (inv-before (xi-line-cache-invalid_before cache))
-                 (inv-after (xi-line-cache-invalid_after cache))
-                 (window-lines (getmaxy (xile-buffer-state-bufwin bufstate))))
-            (format (current-output-port) "Drawing between ~a and ~a~%" inv-before inv-after)
-            (begin
-              (vector-for-each
-               (lambda (i line)
-                 (when (and (>= i inv-before) (< i inv-after))
-                   (if (and (xi-line-valid line) (>= (xi-line-ln line) (1+ (car current-view))))
-                       (addstr (xile-buffer-state-bufwin bufstate)
-                               (format #f "~a" (xi-line-text line))
-                               #:y (- (xi-line-ln line) (1+ (car current-view))) #:x 0))))
-               (xi-line-cache-lines (xile-buffer-state-line_cache bufstate)))
-
-              (when (xile-buffer-state-cursor bufstate)
-                (move (xile-buffer-state-bufwin bufstate)
-                      (car (xile-buffer-state-cursor bufstate))
-                      (cdr (xile-buffer-state-cursor bufstate)))))
-
-            (refresh (xile-buffer-state-bufwin bufstate)))))
-
       (define (get-local-variable name)
         "Get the buffer-local variable NAME."
         (with-mutex bufstate-guard
@@ -252,9 +257,7 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
         (let ((line (xi-scroll-to-line scroll-to))
               (col (xi-scroll-to-col scroll-to)))
           (with-mutex bufwin-guard
-            (set-xile-buffer-state-cursor bufstate (cons line col))
-            (move (xile-buffer-state-bufwin bufstate) line col)
-            (refresh (xile-buffer-state-bufwin bufstate)))))
+            (set-xile-buffer-state-cursor bufstate (cons line col)))))
 
       (define (cb-config-changed buffer-config-changes)
         "Callback to handle config_changed message BUFFER-CONFIG-CHANGE from Xi."
@@ -311,13 +314,24 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
           (set-xile-buffer-state-pristine bufstate (xi-update-pristine result))
           (set-xile-buffer-state-line_cache
            bufstate
-           (xi-line-cache-execute-update (xile-buffer-state-line_cache bufstate) result)))
-        (draw-buffer))
+           (xi-line-cache-execute-update (xile-buffer-state-line_cache bufstate) result))
+          (set! dirty-state #t)))
+
+      (define (need-redisplay)
+        "Return #t if the buffer should be redisplayed."
+        dirty-state)
+
+      (define (set-clean-state)
+        "Set the buffer clean (= in sync with its display)"
+        (set! dirty-state #f))
+
+      (define (current-visible-lines)
+        "Return (min-line . max-line) visible."
+        current-view)
 
       (set! dispatch
         (lambda (m)
           (cond ((eq? m 'get-bufstate) bufstate)
-                ((eq? m 'get-win) (xile-buffer-state-bufwin bufstate))
                 ((eq? m 'get-name) (xile-buffer-state-file_path bufstate))
                 ((eq? m 'get-var) get-local-variable)
                 ((eq? m 'set-var!) set-local-variable!)
@@ -336,6 +350,9 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
                 ((eq? m 'cb-plugin-stopped) cb-plugin-stopped)
                 ((eq? m 'cb-update-cmds) cb-update-cmds)
                 ((eq? m 'plugin-state) plugin-state)
+                ((eq? m 'need-redisplay) need-redisplay)
+                ((eq? m 'set-clean-display-state) set-clean-state)
+                ((eq? m 'current-view) current-visible-lines)
                 (else (error (format #f "Unknown request : MAKE-XILE-BUFFER ~a~%" m))))))
 
       dispatch))

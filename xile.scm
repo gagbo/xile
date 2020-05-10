@@ -37,10 +37,13 @@
 
     ;; This let provides an environment with the window handles
     (let ((xile-header (make-xile-header))
-          (xile-footer (make-xile-footer)))
+          (xile-footer (make-xile-footer))
+          (xile-main (make-xile-main)))
 
       (keypad! xile-header #t)
       (keypad! xile-footer #t)
+      (keypad! xile-main #t)
+      (curs-set 1)
 
       ;; Header and Footer init
       (update-header xile-header "Xile alpha -- header")
@@ -58,16 +61,17 @@
       ;; Xi init code
       (xile-rpc-send port-to-xi send-mutex (xile-msg-init))
 
-      (begin
-        ;; HACK open / manipulate file
-        (define first-buffer (make-xile-buffer port-to-xi send-mutex first-file))
-        (set! current-buffer first-buffer)
-        ((current-buffer 'create-view))
-        ((current-buffer 'scroll) 0 (getmaxy (current-buffer 'get-win))))
+      ;; HACK open / manipulate file
+      (define first-buffer (make-xile-buffer port-to-xi send-mutex first-file))
+      (set! current-buffer first-buffer)
+      ((current-buffer 'create-view))
+      ((current-buffer 'scroll) 0 (getmaxy xile-main))
 
       ;; Main event loop
       (update-footer xile-footer (format #f  "Xile alpha -- ~a" (current-buffer 'get-name)))
-      (let loop ((key-sequence (encode-key-to-string-sequence (getch (current-buffer 'get-win)))))
+      ;; TODO : This code below does not print the buffer in pristine state when opened....
+      (draw-buffer-in-curses current-buffer xile-main)
+      (let loop ((key-sequence (encode-key-to-string-sequence (getch xile-main))))
         (let ((binding (find-binding (assoc-ref current-state 'keymap) key-sequence)))
           (cond
            ((equal? binding 'quit)
@@ -76,7 +80,9 @@
             (when debug-key-presses
               (format #t "Handled key press : received ~a -> ~a~%" key-sequence binding))
             ((current-buffer binding))
-            (loop (encode-key-to-string-sequence (getch (current-buffer 'get-win)))))
+            (when ((current-buffer 'need-redisplay))
+              (draw-buffer-in-curses current-buffer xile-main))
+            (loop (encode-key-to-string-sequence (getch xile-main))))
            (else
             (clear-footer-text xile-footer)
             (when debug-key-presses
@@ -85,7 +91,7 @@
             (refresh xile-footer)
             ;; Before sending the concat of string sequences, we need to find a way to start the
             ;; sequence from scratch when we are sure that there are no binding with the same prefix
-            (loop (encode-key-to-string-sequence (getch (first-buffer 'get-win)))))))))
+            (loop (encode-key-to-string-sequence (getch xile-main))))))))
 
     ;; Closing code (give back resources)
     (join-thread listener (current-time))
