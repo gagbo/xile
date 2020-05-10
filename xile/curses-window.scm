@@ -166,14 +166,14 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
         "Send Scroll[MIN-LINE MAX-LINE]."
         (rpc-send-notif (xile-msg-edit-scroll (xile-buffer-state-view_id bufstate) min-line max-line)))
 
-      (define (scroll-view-down lines)
+      (define* (scroll-view-down #:optional (lines 1))
         "Scroll the view down LINES lines."
         (let ((current-min-line (car current-view))
               (current-max-line (cdr current-view)))
           (set! current-view (cons (+ current-min-line lines) (+ current-max-line lines)))
           (scroll (car current-view) (cdr current-view))))
 
-      (define (scroll-view-up lines)
+      (define* (scroll-view-up #:optional (lines 1))
         "Scroll the view up LINES lines."
         (let* ((current-min-line (car current-view))
                (current-max-line (cdr current-view))

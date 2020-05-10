@@ -63,13 +63,17 @@ response message are missing. For the notifications, we will see when we want to
 support it. For the Show Hover message, this needs to be implemented at the
 buffer level ; since the buffer will attach the correct id at runtime and
 register the correct callback.
-- [ ] Keymaps :: holding keymaps to ease the event-loop code is also necessary
+- [X] Keymaps :: holding keymaps to ease the event-loop code is also necessary
   to have multiple editor states
-- [ ] Editor states (command and insert at least) ::
+- [ ] Editor states (normal and insert at least) ::
+  "Normal" state has been done. Now 1 states is needed :
+   1) Insert state where every letter is bound to some =self-insert= method in
+      the buffer
 - [ ] Proper header/footer :: I want to decouple buffer from its curses window, and
   have the curses-window module actually handle all of header, footer, and main
   window together
-- [ ] Scheme evaluator :: on =:= in a vim-like manner
+- [ ] Scheme evaluator :: on =:= in a vim-like manner, I want to wrap evaluating
+  a user-input string
 - [ ] Edit file ::
   Set the pristing flag correctly and be able to insert characters
 - [ ] Syntax Highlighting :: (using xi-core bundled syntect)

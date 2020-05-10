@@ -10,7 +10,8 @@
              (xile backend-notifications)
              (xile line-cache)
              (xile callbacks)
-             (xile variables))
+             (xile variables)
+             (xile editor-states))
 
 ;; Main
 (define (main args)
@@ -60,35 +61,31 @@
       (begin
         ;; HACK open / manipulate file
         (define first-buffer (make-xile-buffer port-to-xi send-mutex first-file))
-        ((first-buffer 'create-view))
-        ((first-buffer 'scroll) 0 (getmaxy (first-buffer 'get-win))))
+        (set! current-buffer first-buffer)
+        ((current-buffer 'create-view))
+        ((current-buffer 'scroll) 0 (getmaxy (current-buffer 'get-win))))
 
       ;; Main event loop
-      (update-footer xile-footer (format #f  "Xile alpha -- ~a" (first-buffer 'get-name)))
-      (let loop ((ch (getch (first-buffer 'get-win))))
-        (cond
-         ((eqv? ch #\q)
-          #f)
-         ((eqv? ch KEY_DOWN)
-          (first-buffer 'move_down)
-          (loop (getch (first-buffer 'get-win))))
-         ((eqv? ch KEY_UP)
-          (first-buffer 'move_up)
-          (loop (getch (first-buffer 'get-win))))
-         ((eqv? ch KEY_NPAGE)
-          ((first-buffer 'scroll-view-down) 1)
-          (loop (getch (first-buffer 'get-win))))
-         ((eqv? ch KEY_PPAGE)
-          ((first-buffer 'scroll-view-up) 1)
-          (loop (getch (first-buffer 'get-win))))
-
-         (else
-          (clear-footer-text xile-footer)
-          (when debug-key-presses
-            (format #t "Key press : received ~s~%" ch))
-          (addstr xile-footer (format #f "Press q to quit (you pressed ~a)" ch) #:y 1 #:x 0)
-          (refresh xile-footer)
-          (loop (getch (first-buffer 'get-win)))))))
+      (update-footer xile-footer (format #f  "Xile alpha -- ~a" (current-buffer 'get-name)))
+      (let loop ((key-sequence (encode-key-to-string-sequence (getch (current-buffer 'get-win)))))
+        (let ((binding (find-binding (assoc-ref current-state 'keymap) key-sequence)))
+          (cond
+           ((equal? binding 'quit)
+            #f)
+           (binding
+            (when debug-key-presses
+              (format #t "Handled key press : received ~a -> ~a~%" key-sequence binding))
+            ((current-buffer binding))
+            (loop (encode-key-to-string-sequence (getch (current-buffer 'get-win)))))
+           (else
+            (clear-footer-text xile-footer)
+            (when debug-key-presses
+              (format #t "Unhandled key press : received ~a~%" key-sequence))
+            (addstr xile-footer (format #f "Press q to quit (you pressed ~a)" key-sequence) #:y 1 #:x 0)
+            (refresh xile-footer)
+            ;; Before sending the concat of string sequences, we need to find a way to start the
+            ;; sequence from scratch when we are sure that there are no binding with the same prefix
+            (loop (encode-key-to-string-sequence (getch (first-buffer 'get-win)))))))))
 
     ;; Closing code (give back resources)
     (join-thread listener (current-time))
