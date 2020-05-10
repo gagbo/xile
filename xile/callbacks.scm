@@ -1,11 +1,11 @@
 ;; coding: utf-8
 
 (define-module (xile callbacks)
-  #:use-module (xile json-rpc)
   #:use-module (xile buffer)
-  #:use-module (xile backend-notifications)
+  #:use-module (xile xi-protocol json-rpc)
+  #:use-module (xile xi-protocol notification-types)
+  #:use-module (xile xi-protocol themes)            ; Only for the 'theme_changed callback
   #:use-module (xile variables)
-  #:use-module (xile themes)            ; Only for the 'theme_changed callback
   #:export (register-default-callbacks))
 
 (define (register-default-callbacks)

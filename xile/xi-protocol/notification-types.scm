@@ -1,10 +1,10 @@
 ;; coding: utf-8
 
-(define-module (xile backend-notifications)
+(define-module (xile xi-protocol notification-types)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-9)
   #:use-module (srfi srfi-43)
-  #:use-module (xile themes)
+  #:use-module (xile xi-protocol themes)
   #:export (parse-xi-update
             parse-xi-line
             parse-xi-op
@@ -162,7 +162,7 @@ document has unsaved changes.
 
 The rev field is not present in current builds, but will be at some
 point in the future. "
- 
+
   (let ((view_id (assoc-ref result "view_id"))
         (update-alist (assoc-ref result "update")))
     (let ((ops (and=> (assoc-ref update-alist "ops") (lambda (vec) (vector-map (lambda (i op) (parse-xi-op op)) vec))))

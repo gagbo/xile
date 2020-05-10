@@ -1,6 +1,6 @@
 ;; coding: utf-8
 
-(define-module (xile json-rpc)
+(define-module (xile xi-protocol json-rpc)
   #:use-module (xile variables)
   #:use-module (json)
   #:use-module (ice-9 popen)

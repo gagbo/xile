@@ -1,8 +1,8 @@
 ;; coding: utf-8
 
-(define-module (xile line-cache)
-  #:use-module (xile message)
-  #:use-module (xile backend-notifications)
+(define-module (xile xi-protocol line-cache)
+  #:use-module (xile xi-protocol message)
+  #:use-module (xile xi-protocol notification-types)
   #:use-module (xile variables)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-9)

@@ -1,7 +1,7 @@
 ;; coding: utf-8
 
 
-(define-module (xile message)
+(define-module (xile xi-protocol message)
   #:use-module (json)
   #:export (xile-msg-init
             xile-msg-new_view

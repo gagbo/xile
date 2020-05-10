@@ -4,7 +4,7 @@
 (add-to-load-path (dirname (dirname (current-filename))))
 
 (use-modules (srfi srfi-64)
-             (xile curses-window)
+             (xile curses window)
              (ncurses curses))
 
 (test-begin "encode-keys")

@@ -1,6 +1,6 @@
 ;; coding: utf-8
 
-(define-module (xile themes)
+(define-module (xile xi-protocol themes)
   #:use-module (srfi srfi-9)
   #:export (make-xile-theme
             xile-theme-name

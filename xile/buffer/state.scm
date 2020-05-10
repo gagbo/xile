@@ -1,8 +1,8 @@
 ;; coding: utf-8
 ;; Xile buffer state and variables
 
-(define-module (xile buffer-state)
-  #:use-module (xile backend-notifications)
+(define-module (xile buffer state)
+  #:use-module (xile xi-protocol notification-types)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-9)
   #:export (make-xile-buffer-state

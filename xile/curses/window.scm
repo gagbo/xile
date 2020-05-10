@@ -1,9 +1,9 @@
 ;; coding: utf-8
 
-(define-module (xile curses-window)
-  #:use-module (xile backend-notifications) ; For xi-line record
-  #:use-module (xile line-cache)            ; For xi-line-cache record
-  #:use-module (xile buffer-state)          ; For xile-buffer-state record
+(define-module (xile curses window)
+  #:use-module (xile xi-protocol notification-types) ; For xi-line record
+  #:use-module (xile xi-protocol line-cache)            ; For xi-line-cache record
+  #:use-module (xile buffer state)          ; For xile-buffer-state record
   #:use-module (xile variables)             ; For global variables
   #:use-module (ncurses curses)             ; For the curses interface
   #:use-module (ice-9 threads)              ; For the with-mutex

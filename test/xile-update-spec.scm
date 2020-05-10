@@ -4,8 +4,8 @@
 (add-to-load-path (dirname (dirname (current-filename))))
 
 (use-modules (srfi srfi-64)
-             (xile line-cache)
-             (xile backend-notifications))
+             (xile xi-protocol line-cache)
+             (xile xi-protocol notification-types))
 
 (define (wrap-messages-in-update msg-list)
   (parse-xi-update `(("view_id" . "test-update-spec")
