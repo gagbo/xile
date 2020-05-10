@@ -2,7 +2,7 @@
 
 (define-module (xile callbacks)
   #:use-module (xile json-rpc)
-  #:use-module (xile curses-window)
+  #:use-module (xile buffer)
   #:use-module (xile backend-notifications)
   #:use-module (xile variables)
   #:use-module (xile themes)            ; Only for the 'theme_changed callback

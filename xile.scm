@@ -6,6 +6,7 @@
              (ice-9 threads) ;; For the join-thread in main
              (xile message)
              (xile json-rpc)
+             (xile buffer)
              (xile curses-window)
              (xile backend-notifications)
              (xile line-cache)
