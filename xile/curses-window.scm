@@ -115,7 +115,7 @@ Control-M from hitting C then - then M."
   (let* ((height (- (lines) footer-height header-height))
          (width 0)
          (startx 0)
-         (starty 1))
+         (starty header-height))
     (newwin height width starty startx)))
 
 (define (draw-buffer-in-curses buffer window)

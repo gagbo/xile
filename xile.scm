@@ -59,6 +59,18 @@
       ;; registered, like available_languages notification)
       (register-default-callbacks)
 
+      ;; Change the update callback to call the ncurses redisplay code
+      (xile-register-callback
+       'update
+       (lambda (result)
+         (let* ((view_id (assoc-ref result "view_id"))
+                (xile-buffer (find-xile-buffer (string->symbol view_id))))
+           (format #t "Update : xile-buffer for ~a is ~a~%" view_id xile-buffer)
+           (when xile-buffer
+             ((xile-buffer 'cb-update) (parse-xi-update result))
+             (when (eq? xile-buffer current-buffer)
+               (draw-buffer-in-curses current-buffer xile-main))))))
+
       ;; Xi init code
       (xile-rpc-send port-to-xi send-mutex (xile-msg-init))
 
@@ -72,7 +84,6 @@
       ;; TODO : This code below does not print the buffer in pristine state when opened....
       ;; Actually, it looks like the xile-main window is always "one key press" behind regarding
       ;; inforation actually displayed (play with [UP] [DOWN] to see the problem
-      (draw-buffer-in-curses current-buffer xile-main)
       (let loop ((key-sequence (encode-key-to-string-sequence (getch xile-main))))
         (let ((binding (find-binding (assoc-ref current-state 'keymap) key-sequence)))
           (cond
@@ -82,8 +93,6 @@
             (when debug-key-presses
               (format #t "Handled key press : received ~a -> ~a~%" key-sequence binding))
             ((current-buffer binding))
-            (when ((current-buffer 'need-redisplay))
-              (draw-buffer-in-curses current-buffer xile-main))
             (loop (encode-key-to-string-sequence (getch xile-main))))
            (else
             (clear-footer-text xile-footer)
@@ -91,8 +100,6 @@
               (format #t "Unhandled key press : received ~a~%" key-sequence))
             (addstr xile-footer (format #f "Press q to quit (you pressed ~a)" key-sequence) #:y 1 #:x 0)
             (refresh xile-footer)
-            (when ((current-buffer 'need-redisplay))
-              (draw-buffer-in-curses current-buffer xile-main))
             ;; Before sending the concat of string sequences, we need to find a way to start the
             ;; sequence from scratch when we are sure that there are no binding with the same prefix
             (loop (encode-key-to-string-sequence (getch xile-main))))))))

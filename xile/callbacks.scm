@@ -13,8 +13,6 @@
   (begin
     (xile-register-callback
      'update
-     ;; The "update" callback here is just badly extracting the text
-     ;; from the first line of updates.
      (lambda (result)
        (let* ((view_id (assoc-ref result "view_id"))
               (xile-buffer (find-xile-buffer (string->symbol view_id))))
