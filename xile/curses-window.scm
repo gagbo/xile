@@ -112,10 +112,7 @@ Control-M from hitting C then - then M."
 
 (define (make-xile-main)
   "Return a window suitable to hold a buffer."
-  ;; TODO : Get proper height/width params
-  ;; 2 is (getmaxy xile-footer-win) and 1 is (getmaxy xile-header-win)
-  ;; But HOW can I get these into scope properly for evaluation ?
-  (let* ((height (- (lines) 2 1))
+  (let* ((height (- (lines) footer-height header-height))
          (width 0)
          (startx 0)
          (starty 1))
@@ -124,29 +121,26 @@ Control-M from hitting C then - then M."
 (define (draw-buffer-in-curses buffer window)
   "Draw the buffer BUFFER in WINDOW and refresh WINDOW (redisplay code)."
   (let* ((bufstate (buffer 'get-bufstate))
-         (bufwin-guard (xile-buffer-state-win-guard bufstate)))
-    (with-mutex bufwin-guard
-      (let* ((cache (xile-buffer-state-line_cache bufstate))
-             (inv-before (xi-line-cache-invalid_before cache))
-             (inv-after (xi-line-cache-invalid_after cache))
-             (window-lines (getmaxy window))
-             (current-view ((buffer 'current-view))))
-        (format #t "Drawing between ~a and ~a~%" inv-before inv-after)
-        (begin
-          (vector-for-each
-           (lambda (i line)
-             (when (and (>= i inv-before) (< i inv-after))
-               (if (and (xi-line-valid line) (>= (xi-line-ln line) (1+ (car current-view))))
-                   (addstr window
-                           (format #f "~a" (xi-line-text line))
-                           #:y (- (xi-line-ln line) (1+ (car current-view))) #:x 0))))
-           (xi-line-cache-lines (xile-buffer-state-line_cache bufstate)))
+         (cache (xile-buffer-state-line_cache bufstate))
+         (inv-before (xi-line-cache-invalid_before cache))
+         (inv-after (xi-line-cache-invalid_after cache))
+         (window-lines (getmaxy window))
+         (current-view ((buffer 'current-view))))
+    (format #t "Drawing between ~a and ~a~%" inv-before inv-after)
+    (begin
+      (vector-for-each
+       (lambda (i line)
+         (when (and (>= i inv-before) (< i inv-after))
+           (if (and (xi-line-valid line) (>= (xi-line-ln line) (1+ (car current-view))))
+               (addstr window
+                       (format #f "~a" (xi-line-text line))
+                       #:y (- (xi-line-ln line) (1+ (car current-view))) #:x 0))))
+       (xi-line-cache-lines (xile-buffer-state-line_cache bufstate)))
 
-          (when (xile-buffer-state-cursor bufstate)
-            (move window
-                  (car (xile-buffer-state-cursor bufstate))
-                  (cdr (xile-buffer-state-cursor bufstate)))))
+      (when (xile-buffer-state-cursor bufstate)
+        (move window
+              (car (xile-buffer-state-cursor bufstate))
+              (cdr (xile-buffer-state-cursor bufstate)))))
 
-        ((buffer 'set-clean-display-state))
-        (refresh window)))))
-
+    ((buffer 'set-clean-display-state))
+    (refresh window)))

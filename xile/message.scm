@@ -80,7 +80,6 @@
                            (set! id (1+ id))
                            (cons id (scm->json-string `((id . ,id) (method . ,method) (params . ,msg-param-alist)))))))
 
-;; TODO : namespace should be a string or a symbol
 (define* (xile-msg-namespace-generic namespace method #:key (ns-param-alist '()))
   (xile-msg-generic namespace #:msg-param-alist (acons 'method method ns-param-alist)))
 
@@ -207,8 +206,6 @@ last (non-inclusive) formatted lines. The visible scroll region is used to
 compute movement distance for page up and page down commands, and also
 controls the size of the fragment sent in the update method."
 
-  ;; TODO : notification, not method
-  ;; (xile-msg-edit-generic 'scroll view_id #(start end))
   (xile-notif-generic
    'edit
    #:notif-param-alist `((method . scroll) (view_id . ,view_id) (params . #(,start ,end)))))

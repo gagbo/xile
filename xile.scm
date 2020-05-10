@@ -63,14 +63,15 @@
       (xile-rpc-send port-to-xi send-mutex (xile-msg-init))
 
       ;; HACK open / manipulate file
-      (define first-buffer (make-xile-buffer port-to-xi send-mutex first-file))
-      (set! current-buffer first-buffer)
+      (set! current-buffer (make-xile-buffer port-to-xi send-mutex first-file))
+      (update-footer xile-footer (format #f  "Xile alpha -- ~a" (current-buffer 'get-name)))
       ((current-buffer 'create-view))
       ((current-buffer 'scroll) 0 (getmaxy xile-main))
 
       ;; Main event loop
-      (update-footer xile-footer (format #f  "Xile alpha -- ~a" (current-buffer 'get-name)))
       ;; TODO : This code below does not print the buffer in pristine state when opened....
+      ;; Actually, it looks like the xile-main window is always "one key press" behind regarding
+      ;; inforation actually displayed (play with [UP] [DOWN] to see the problem
       (draw-buffer-in-curses current-buffer xile-main)
       (let loop ((key-sequence (encode-key-to-string-sequence (getch xile-main))))
         (let ((binding (find-binding (assoc-ref current-state 'keymap) key-sequence)))
@@ -90,6 +91,8 @@
               (format #t "Unhandled key press : received ~a~%" key-sequence))
             (addstr xile-footer (format #f "Press q to quit (you pressed ~a)" key-sequence) #:y 1 #:x 0)
             (refresh xile-footer)
+            (when ((current-buffer 'need-redisplay))
+              (draw-buffer-in-curses current-buffer xile-main))
             ;; Before sending the concat of string sequences, we need to find a way to start the
             ;; sequence from scratch when we are sure that there are no binding with the same prefix
             (loop (encode-key-to-string-sequence (getch xile-main))))))))

@@ -1,7 +1,6 @@
 ;; coding: utf-8
 ;; A Xile Buffer (a "view" from Xi point of view)
 
-;; TODO : cleanup imports here
 (define-module (xile buffer)
   #:use-module (xile buffer-state)
   #:use-module (xile message)
@@ -74,10 +73,12 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
 
       (define (move_down)
         "Move the cursor down."
+        (set! dirty-state #t)
         (rpc-send-notif (xile-msg-edit-move_down (xile-buffer-state-view_id bufstate))))
 
       (define (move_up)
         "Move the cursor up."
+        (set! dirty-state #t)
         (rpc-send-notif (xile-msg-edit-move_up (xile-buffer-state-view_id bufstate))))
 
       (define (create-view)
@@ -99,7 +100,8 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
           ;; Seems weird
           (xile-rpc-send to-xi to-xi-guard msg)
           (with-mutex id-to-buffer-guard
-            (wait-condition-variable wait-for-id id-to-buffer-guard))))
+            (wait-condition-variable wait-for-id id-to-buffer-guard)))
+        (set! dirty-state #t))
 
       (define (get-local-variable name)
         "Get the buffer-local variable NAME."

@@ -29,12 +29,13 @@
   "[["
   (encode-key-to-string-sequence #\[))
 
-;; TODO : Find out what's sent on C-key and M-key
+;; TODO : Find out what's sent on C-key
 ;; (test-equal "Encode control letter"
 ;;   "[C-d]"
 ;;   (encode-key-to-string-sequence "^D"))
 
-;; TODO : Find out what's sent on C-key and M-key
+;; CANCELLED : Find out what's sent on M-key
+;; M-key looks like unsupported on curses :(
 ;; (test-equal "Encode control letter"
 ;;   "[M-x]"
 ;;   (encode-key-to-string-sequence "^[X"))
