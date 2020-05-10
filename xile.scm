@@ -8,6 +8,7 @@
              (xile json-rpc)
              (xile buffer)
              (xile curses-window)
+             (xile curses-callbacks)
              (xile backend-notifications)
              (xile line-cache)
              (xile callbacks)
@@ -57,19 +58,7 @@
       ;; Register the default callbacks before sending the init message
       ;; (otherwise we might receive notifications before callbacks are
       ;; registered, like available_languages notification)
-      (register-default-callbacks)
-
-      ;; Change the update callback to call the ncurses redisplay code
-      (xile-register-callback
-       'update
-       (lambda (result)
-         (let* ((view_id (assoc-ref result "view_id"))
-                (xile-buffer (find-xile-buffer (string->symbol view_id))))
-           (format #t "Update : xile-buffer for ~a is ~a~%" view_id xile-buffer)
-           (when xile-buffer
-             ((xile-buffer 'cb-update) (parse-xi-update result))
-             (when (eq? xile-buffer current-buffer)
-               (draw-buffer-in-curses current-buffer xile-main))))))
+      (register-default-curses-callbacks xile-header xile-main xile-footer)
 
       ;; Xi init code
       (xile-rpc-send port-to-xi send-mutex (xile-msg-init))
