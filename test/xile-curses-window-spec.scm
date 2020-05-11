@@ -7,7 +7,7 @@
              (xile curses window)
              (ncurses curses))
 
-(test-begin "encode-keys")
+(test-begin "encode-keys-curses")
 
 (test-equal "Encode simple letter"
   "q"
@@ -29,7 +29,7 @@
   "[["
   (encode-key-to-string-sequence #\[))
 
-;; TODO : Find out what's sent on C-key
+;; TODO(curses) : Find out what's sent on C-key
 ;; (test-equal "Encode control letter"
 ;;   "[C-d]"
 ;;   (encode-key-to-string-sequence "^D"))
@@ -40,6 +40,6 @@
 ;;   "[M-x]"
 ;;   (encode-key-to-string-sequence "^[X"))
 
-(test-end "encode-keys")
+(test-end "encode-keys-curses")
 
 (exit (+ (test-runner-fail-count (test-runner-get)) (test-runner-xpass-count (test-runner-get))))

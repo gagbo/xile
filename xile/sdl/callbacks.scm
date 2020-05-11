@@ -1,20 +1,34 @@
 ;; coding: utf-8
 
-(define-module (xile curses callbacks)
+(define-module (xile sdl callbacks)
+  #:use-module (sdl2)
+  #:use-module (sdl2 ttf)
+  #:use-module (sdl2 render)
+  #:use-module (sdl2 surface)
+  #:use-module (sdl2 video)
   #:use-module (xile buffer)
   #:use-module (xile xi-protocol json-rpc)
   #:use-module (xile xi-protocol notification-types)
   #:use-module (xile xi-protocol themes)            ; Only for the 'theme_changed callback
   #:use-module (xile variables)
-  #:use-module (xile curses window)
-  #:export (register-default-curses-callbacks))
+  #:use-module (xile sdl window)
+  #:export (register-default-sdl-callbacks))
 
-(define (register-default-curses-callbacks _header-win main-win _footer-win)
-  "Register default curses callbacks on Xi incoming notifications / messages using :
+(define (redraw buffer window)
+  "Redraw the buffer BUFFER in WINDOW."
+  (call-with-renderer
+   (make-renderer window)
+   (lambda (renderer)
+     (draw-buffer-in-sdl current-buffer
+                         (car (window-size window))
+                         (cadr (window-size window))
+                         renderer))))
 
-- MAIN-WIN to display buffer
-- HEADER-WIN for header
-- FOOTER-WIN for footer"
+(define (register-default-sdl-callbacks main-win)
+  "Register default sdl callbacks on Xi incoming notifications / messages using :
+
+- MAIN-WIN to display buffer"
+
   (begin
     (xile-register-callback
      'update
@@ -25,7 +39,7 @@
          (when xile-buffer
            ((xile-buffer 'cb-update) (parse-xi-update result))
            (when (eq? xile-buffer current-buffer)
-             (draw-buffer-in-curses current-buffer main-win))))))
+             (redraw current-buffer main-win))))))
 
     (xile-register-callback
      'scroll_to
@@ -36,7 +50,7 @@
          (when xile-buffer
            ((xile-buffer 'cb-scroll-to) (parse-xi-scroll-to result))
            (when (eq? xile-buffer current-buffer)
-             (draw-buffer-in-curses current-buffer main-win))))))
+             (redraw current-buffer main-win))))))
 
     (xile-register-callback
      'language_changed
@@ -47,7 +61,7 @@
          (when xile-buffer
            ((xile-buffer 'cb-language-changed) (parse-xi-buffer-language-change result))
            (when (eq? xile-buffer current-buffer)
-             (draw-buffer-in-curses current-buffer main-win))))))
+             (redraw current-buffer main-win))))))
 
     (xile-register-callback
      'config_changed
@@ -58,7 +72,7 @@
          (when xile-buffer
            ((xile-buffer 'cb-config-changed) (parse-xi-buffer-config-change result))
            (when (eq? xile-buffer current-buffer)
-             (draw-buffer-in-curses current-buffer main-win))))))
+             (redraw current-buffer main-win))))))
 
     (xile-register-callback
      'theme_changed
@@ -119,7 +133,7 @@
              (source (assoc-ref result "source"))
              (value (assoc-ref result "value")))
          (set! status-bar (assoc-set! status-bar key `((alignment . ,(string->symbol align)) (source . ,source) (value . ,value))))
-         ;; TODO(curses) : define a (draw-footer) in xile curses-window and use that
+         ;; TODO(curses) : define a (draw-footer) in xile sdl-window and use that
          )))
 
     (xile-register-callback
@@ -130,7 +144,7 @@
               (old-status-item (assoc-ref status-bar key))
               (new-status-item (assoc-set! old-status-item 'value value)))
          (set! status-bar (assoc-set! status-bar key new-status-item))
-         ;; TODO(curses) : redraw footer using (missing) xile curses-window (draw-footer)
+         ;; TODO(curses) : redraw footer using (missing) xile sdl-window (draw-footer)
          )))
 
     (xile-register-callback
@@ -138,7 +152,7 @@
      (lambda (result)
        (let ((key (assoc-ref result "key")))
          (set! status-bar (assoc-remove! status-bar key))
-         ;; TODO(curses) : redraw footer using (missing) xile curses-window (draw-footer)
+         ;; TODO(curses) : redraw footer using (missing) xile sdl-window (draw-footer)
          )))
 
     (xile-register-callback

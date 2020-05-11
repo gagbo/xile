@@ -7,3 +7,4 @@
 (set! debug-line-cache #f)
 (set! debug-incoming-messages #f)
 (set! debug-key-presses #t)
+(set! font-path "config/iosevka-light.ttf")

@@ -87,13 +87,13 @@ Control-M from hitting C then - then M."
 
 (define (update-header header-win text)
   "Update the header HEADER-WIN with TEXT."
-  ;; TODO Make the refresh optional
+  ;; TODO(curses) Make the refresh optional
   (addstr header-win text #:y 0 #:x 10)
   (refresh header-win))
 
 (define (update-footer footer-win text)
   "Update the footer window FOOTER-WIN with TEXT."
-  ;; TODO Make the refresh optional
+  ;; TODO(curses) Make the refresh optional
 
   ;; HACK : bkdgset! scope assumes the old value is (normal #\sp) and hardcodes it in the
   ;; function.
@@ -105,7 +105,7 @@ Control-M from hitting C then - then M."
 
 (define (clear-footer-text footer-win)
   "Clear the text in the footer window FOOTER-WIN."
-  ;; TODO Make the refresh optional
+  ;; TODO(curses) Make the refresh optional
   (move footer-win 1 0)
   (clrtobot footer-win)
   (refresh footer-win))
