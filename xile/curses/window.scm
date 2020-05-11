@@ -124,7 +124,6 @@ Control-M from hitting C then - then M."
          (cache (xile-buffer-state-line_cache bufstate))
          (inv-before (xi-line-cache-invalid_before cache))
          (inv-after (xi-line-cache-invalid_after cache))
-         (window-lines (getmaxy window))
          (current-view ((buffer 'current-view))))
     (format #t "Drawing between ~a and ~a~%" inv-before inv-after)
     (begin
