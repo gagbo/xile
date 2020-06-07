@@ -214,6 +214,6 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
                 ((eq? m 'need-redisplay) need-redisplay)
                 ((eq? m 'set-clean-display-state) set-clean-state)
                 ((eq? m 'current-view) current-visible-lines)
-                (else (error (format #f "Unknown request : MAKE-XILE-BUFFER ~a~%" m))))))
+                (else (error (format #f "Unknown request : XILE BUFFER ~a~%" m))))))
 
       dispatch))
