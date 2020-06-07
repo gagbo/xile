@@ -45,7 +45,7 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
 
       (define dispatch #f)            ; dispatch acts as "this" in OOP-languages
 
-      ;; TODO : Refactor the notification sending out of buffer.
+      ;; TODO(refactor) : Refactor the notification sending out of buffer.
       ;; This is the most stateless part we can start with.
       (define (rpc-send-notif notif)
         "Send the notification NOTIF to Xi through RPC."
@@ -214,6 +214,6 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
                 ((eq? m 'need-redisplay) need-redisplay)
                 ((eq? m 'set-clean-display-state) set-clean-state)
                 ((eq? m 'current-view) current-visible-lines)
-                (else (error (format #f "Unknown request : MAKE-XILE-BUFFER ~a~%" m))))))
+                (else (error (format #f "Unknown request : XILE BUFFER ~a~%" m))))))
 
       dispatch))

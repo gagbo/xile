@@ -7,6 +7,8 @@ Editor using GNU Guile and libraries.
 - [[#quickstart][Quickstart]]
   - [[#compile-xi-editor][Compile Xi editor]]
   - [[#start][Start]]
+    - [[#sdl2][SDL2]]
+    - [[#curses][Curses]]
   - [[#test-script][Test script]]
   - [[#stop][Stop]]
 - [[#dependencies][Dependencies]]
@@ -19,15 +21,22 @@ Editor using GNU Guile and libraries.
 Update the submodule and =cargo build --release= the bundled [[https://github.com/xi-editor/xi-editor][Xi editor]]
 
 ** Start
-If you have a working guile with =guile-ncurses= support and =guile-json-scm=
+By default it will load a user config located in this repo in =config/xile.scm=.
+It's hardcoded for now but hopefully will be configurable later.
+
+*** SDL2
+If you have a working guile with the patched version of =guile-sdl2= and =guile-json-scm=
 support, it is as simple as
 #+BEGIN_SRC bash
 ./xile.scm
 #+END_SRC
 
-By default it will load a user config located in this repo in =config/xile.scm=.
-It's hardcoded for now but hopefully will be configurable later.
-
+*** Curses
+You can start the (older, not really maintained nor finished) ncurses version in 2 changes :
+- changing the [[./xile.scm][xile.scm]] file to use =(xile application curses)= module instead
+  of the =(xile application sdl)= one
+- changing the =(start-xile-in-sdl (xile-setup))= call to =(start-xile-in-curses (xile-setup))=
+ 
 ** Test script
 For the time being we are just opening this README file to see how it's
 displayed.
@@ -40,14 +49,20 @@ All the logs are located in the [[./logs][logs]] folder after the run :
   callbacks
 
 ** Stop
-Hit =q= to stop Xile.
+Hit =q= to stop Xile (it may error out, but you're still out, right ?). In SDL
+you can also send a quit-event.
 
 * Dependencies
 
 I target Guile 3.0 with this little endeavour. The [[./guix_deps][Guix Deps]] directory contains
 package definitions for the dependencies which are not yet in guix packages. The
-only dependency currently needed which is not in guix packages is the guile3.0
-version of ncurses library.
+dependencies currently needed may or may not be in guix packages, I stopped
+following those versions closely for now, as the packages files in guix deps are
+working with Guix and are version-controlled.
+
+Note that the project is using a patched version of guile-sdl2 (the patch is
+currently being reviewed for upstream inclusion). The patch is mostly
+additionnal ttf bindings to be able to draw and manage a text-grid in Guile.
 
 * Roadmap
 - [X] Display buffer ::
@@ -66,16 +81,25 @@ register the correct callback.
 - [X] Keymaps :: holding keymaps to ease the event-loop code is also necessary
   to have multiple editor states
 - [ ] Editor states (normal and insert at least) ::
-  "Normal" state has been done. Now 1 states is needed :
+  "Normal" state has been 'done' (it exists, and is the default). Now 1 more
+  state is needed :
    1) Insert state where every letter is bound to some =self-insert= method in
       the buffer
 - [ ] Proper header/footer :: I want to decouple buffer from its curses window, and
   have the curses-window module actually handle all of header, footer, and main
   window together
+  - Decoupling is done, so now each "xile {sdl,curses} window" can implement
+    their own methods and callback handling to draw headers/footers as they want
+  - Management of header/footer is now missing in SDL application
 - [ ] Scheme evaluator :: on =:= in a vim-like manner, I want to wrap evaluating
-  a user-input string
+  a user-input string. This probably means a new mode to handle this, using the
+  =eval-string= method of Guile or something.
+  *The Footer handling is a
+  prerequisite*, as the input should be checkable by the user.
 - [ ] Edit file ::
-  Set the pristing flag correctly and be able to insert characters
+  Set the pristing flag correctly and be able to insert characters. *The insert
+  state is a prerequisite*, since, well, insert bindings are only going to live
+  there
 - [ ] Syntax Highlighting :: (using xi-core bundled syntect)
 
 * Objectives

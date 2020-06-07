@@ -57,7 +57,7 @@
       ((current-buffer 'scroll) 0 (getmaxy xile-main))
 
       ;; Main event loop
-      ;; TODO : This code below does not print the buffer in pristine state when opened....
+      ;; TODO(curses) : This code below does not print the buffer in pristine state when opened....
       ;; Actually, it looks like the xile-main window is always "one key press" behind regarding
       ;; inforation actually displayed (play with [UP] [DOWN] to see the problem
       (let loop ((key-sequence (encode-key-to-string-sequence (getch xile-main))))

@@ -19,7 +19,8 @@
             debug-incoming-messages
             debug-key-presses
             listener-stdout
-            listener-stderr))
+            listener-stderr
+            font-path))
 
 ;; The first file to open with Xile
 (define-once first-file "not README.org")
@@ -69,3 +70,6 @@
 
 ;; The current buffer to send buffer-local commands to
 (define-once current-buffer #f)
+
+;; The path to the font to use
+(define-once font-path #f)
