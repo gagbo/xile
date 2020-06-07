@@ -60,17 +60,13 @@
               #f)
              ((keyboard-down-event? event)
               (cond
-               ((eq? (keyboard-event-key event) 'j)
-                ((current-buffer 'scroll-view-down))
-                (loop (poll-event) ""))
-               ((eq? (keyboard-event-key event) 'q)
-                #f)
-               ((eq? (keyboard-event-key event) 'k)
-                ((current-buffer 'scroll-view-up))
-                (loop (poll-event) ""))
+               ;; Ignore the modifiers being pushed down
+               ((member (keyboard-event-key event) '(left-shift right-shift left-control right-control left-alt right-alt left-gui right-gui))
+                (loop (poll-event) key-sequence))
                (else
-                (format #t "Unhandled event : received ~a~%" event)
-                (loop (poll-event) key-sequence))))
+                (let ((new-key (keyboard-event->string-sequence event)))
+                  (format #t "Received ~a : key sequence is ~a~%" new-key (string-concatenate (list key-sequence new-key)))
+                  (loop (poll-event) (string-concatenate (list key-sequence new-key)))))))
              (else
               (when event (format #t "Unhandled event : received ~a~%" event))
               (loop (poll-event) key-sequence)))))))
