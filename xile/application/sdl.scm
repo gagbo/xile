@@ -67,13 +67,21 @@
                 (loop (poll-event) key-sequence))
                (else
                 (let* ((new-key (keyboard-event->string-sequence event))
-                       (new-key-sequence (key-sequence-add key-sequence new-key)))
-                  (format #t "Received ~a : key sequence is ~a~%" new-key new-key-sequence)
-                  ;; TODO : the code that resets the key-sequence if too long is hidden here. Needs to be
-                  ;; in a "brighter" location
-                  (loop (poll-event) (if (> 3 (key-sequence-length new-key-sequence))
-                                         ""
-                                         new-key-sequence))))))
+                       (new-key-sequence (key-sequence-add key-sequence new-key))
+                       (binding (find-binding (assoc-ref current-state 'keymap) new-key-sequence)))
+                  (if binding
+                      (begin
+                        (when debug-key-presses
+                          (format #t "Handled key press : received ~a -> ~a~%" key-sequence binding))
+                        ((current-buffer binding))
+                        (loop (poll-event) ""))
+                      (begin
+                       (format #t "Received ~a : key sequence is ~a~%" new-key new-key-sequence)
+                       ;; TODO : the code that resets the key-sequence if too long is hidden here. Needs to be
+                       ;; in a "brighter" location
+                       (loop (poll-event) (if (> 3 (key-sequence-length new-key-sequence))
+                                              ""
+                                              new-key-sequence))))))))
              (else
               (when event (format #t "Unhandled event : received ~a~%" event))
               (loop (poll-event) key-sequence)))))))
