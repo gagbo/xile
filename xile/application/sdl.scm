@@ -9,6 +9,7 @@
   #:use-module (sdl2 ttf)
   #:use-module (sdl2 video)
   #:use-module (xile sdl window)
+  #:use-module (xile sdl input)
   #:use-module (xile sdl callbacks)
   #:use-module (xile buffer)
   #:use-module (xile editor-states)
