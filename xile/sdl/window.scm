@@ -92,6 +92,10 @@ Control-M from hitting C then - then M."
          ;;;; Return
          ((eq? (keyboard-event-key event) 'return)
           "[RET]")
+         ((eq? (keyboard-event-key event) 'page-up)
+          "[PPAGE]")
+         ((eq? (keyboard-event-key event) 'page-down)
+          "[NPAGE]")
          ;;;; Arrows and other special keys that just get UPCASED
          ((member (keyboard-event-key event) '(down up left right) eq?)
           (string-concatenate (list "[" uppercase-key-name "]")))
