@@ -12,7 +12,9 @@
   #:use-module (xile xi-protocol line-cache)            ; For xi-line-cache record
   #:use-module (xile buffer state)          ; For xile-buffer-state record
   #:use-module (xile variables)             ; For global variables
+  #:use-module (ice-9 match)
   #:use-module (ice-9 threads)              ; For the with-mutex
+  #:use-module (srfi srfi-1)                ; Find
   #:use-module (srfi srfi-43)               ; Vectors
   #:export (keyboard-event->string-sequence
             make-xile-window
@@ -61,25 +63,45 @@ Control-M from hitting C then - then M."
            (find
             (lambda (modifier)
               (or (eq? modifier 'left-control) (eq? modifier 'right-control)))
-            modifiers)))
+            modifiers))
+          (lowercase-key-name (symbol->string (keyboard-event-key event)))
+          (uppercase-key-name (string-upcase (symbol->string (keyboard-event-key event)))))
 
       (string-concatenate
        (list
+        ;;; Modifiers (and necessary bracket if relevant)
         (cond ((zero? (length modifiers-sans-shift))
                "")
               (else
-               "["
-                ;; FIXME : Add a fold here to add the modifiers correctly C- or M- etc.
-               ))
+               (fold (lambda (pair prev)
+                       (match pair
+                         ((mod-p . str-repr)
+                          (if mod-p
+                              (string-concatenate (list prev str-repr))
+                              prev))))
+                     "["
+                     `((,modifiers-control? . "C-")
+                       (,modifiers-alt?     . "M-")
+                       (,modifiers-gui?     . "S-")))))
 
+        ;;; Letter / keycode handling
         (cond
-         ;; Escaped char
+         ;;;; Escaped char
          ((eq? (keyboard-event-key event) 'left-bracket)
           "[[")
-         ;; Unknown land
+         ;;;; Return
+         ((eq? (keyboard-event-key event) 'return)
+          "[RET]")
+         ;;;; Arrows and other special keys that just get UPCASED
+         ((member (keyboard-event-key event) '(down up left right) eq?)
+          (string-concatenate (list "[" uppercase-key-name "]")))
+         ;;;; Unknown land (hopefully only alphas)
          (else
-          (symbol->string (keyboard-event-key event))))
+            (if modifiers-shift?
+                uppercase-key-name
+                lowercase-key-name)))
 
+        ;;; Closing bracket if relevant
         (if (zero? (length modifiers-sans-shift))
             ""
             "]"))))))
