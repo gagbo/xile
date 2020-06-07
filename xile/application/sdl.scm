@@ -62,12 +62,18 @@
              ((keyboard-down-event? event)
               (cond
                ;; Ignore the modifiers being pushed down
-               ((member (keyboard-event-key event) '(left-shift right-shift left-control right-control left-alt right-alt left-gui right-gui))
+               ((member (keyboard-event-key event)
+                        '(left-shift right-shift left-control right-control left-alt right-alt left-gui right-gui))
                 (loop (poll-event) key-sequence))
                (else
-                (let ((new-key (keyboard-event->string-sequence event)))
-                  (format #t "Received ~a : key sequence is ~a~%" new-key (string-concatenate (list key-sequence new-key)))
-                  (loop (poll-event) (string-concatenate (list key-sequence new-key)))))))
+                (let* ((new-key (keyboard-event->string-sequence event))
+                       (new-key-sequence (key-sequence-add key-sequence new-key)))
+                  (format #t "Received ~a : key sequence is ~a~%" new-key new-key-sequence)
+                  ;; TODO : the code that resets the key-sequence if too long is hidden here. Needs to be
+                  ;; in a "brighter" location
+                  (loop (poll-event) (if (> 3 (key-sequence-length new-key-sequence))
+                                         ""
+                                         new-key-sequence))))))
              (else
               (when event (format #t "Unhandled event : received ~a~%" event))
               (loop (poll-event) key-sequence)))))))

@@ -7,7 +7,9 @@
   #:use-module (xile variables)             ; For global variables
   #:use-module (ice-9 match)
   #:use-module (srfi srfi-1)                ; Find
-  #:export (keyboard-event->string-sequence))
+  #:export (keyboard-event->string-sequence
+            key-sequence-length
+            key-sequence-add))
 
 (define (keyboard-event->string-sequence event)
   "Convert a keyboard event EVENT coming from SDL event to a string sequence.
@@ -55,7 +57,7 @@ Control-M from hitting C then - then M."
 
       (string-concatenate
        (list
-        ;;; Modifiers (and necessary bracket if relevant)
+;;; Modifiers (and necessary bracket if relevant)
         (cond ((zero? (length modifiers-sans-shift))
                "")
               (else
@@ -70,28 +72,47 @@ Control-M from hitting C then - then M."
                        (,modifiers-alt?     . "M-")
                        (,modifiers-gui?     . "S-")))))
 
-        ;;; Letter / keycode handling
+;;; Letter / keycode handling
         (cond
-         ;;;; Escaped char
+;;;; Escaped char
          ((eq? (keyboard-event-key event) 'left-bracket)
           "[[")
-         ;;;; Return
+;;;; Return
          ((eq? (keyboard-event-key event) 'return)
           "[RET]")
          ((eq? (keyboard-event-key event) 'page-up)
           "[PPAGE]")
          ((eq? (keyboard-event-key event) 'page-down)
           "[NPAGE]")
-         ;;;; Arrows and other special keys that just get UPCASED
+;;;; Arrows and other special keys that just get UPCASED
          ((member (keyboard-event-key event) '(down up left right) eq?)
           (string-concatenate (list "[" uppercase-key-name "]")))
-         ;;;; Unknown land (hopefully only alphas)
+;;;; Unknown land (hopefully only alphas)
          (else
-            (if modifiers-shift?
-                uppercase-key-name
-                lowercase-key-name)))
+          (if modifiers-shift?
+              uppercase-key-name
+              lowercase-key-name)))
 
-        ;;; Closing bracket if relevant
+;;; Closing bracket if relevant
         (if (zero? (length modifiers-sans-shift))
             ""
             "]"))))))
+
+(define (key-sequence-length sequence)
+  "Return the number of inputs in SEQUENCE."
+  (cond
+   ((string-null? sequence) 0)
+   (else
+    (fold (lambda (char acc)
+            (if (char=? char #\space)
+                (+ 1 acc)
+                acc))
+          1
+          (string->list sequence)))))
+
+(define (key-sequence-add sequence new-key)
+  "Return a sequence consisting of SEQUENCE with NEW-KEY appended."
+  (cond
+   ((string-null? sequence) new-key)
+   (else
+    (string-concatenate (list sequence " " new-key)))))
