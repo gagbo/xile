@@ -4,12 +4,25 @@
 (define-module (xile editor-states)
   #:use-module (xile std process)
   #:use-module (xile std buffer)
+  #:use-module (xile variables)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-13)
   #:use-module (ice-9 hash-table)
-  #:export (normal-state
+  #:export (insert-state
+            insert-state-keymap
+            switch-to-insert-state
+            normal-state
             normal-state-keymap
+            switch-to-normal-state
             find-binding))
+
+(define (switch-to-insert-state)
+  "Change current-state to insert-state"
+  (set! current-state 'insert-state))
+
+(define (switch-to-normal-state)
+  "Change current-state to normal-state"
+  (set! current-state 'normal-state))
 
 ;; Define functions to make keybindings alist work on strings as keys
 (define (keymap-hash str size)
@@ -30,8 +43,7 @@ Return #f if nothing found."
    keymap-hash
    keymap-assoc
    `(("q" . ,kill-xile)
-     ;; FIXME : This i binding is only here for the test
-     ("i" . ,(self-insert-factory "i"))
+     ("i" . ,switch-to-insert-state)
      ("[DOWN]" . ,move_down)
      ("[UP]" . ,move_up)
      ("[NPAGE]" . ,scroll-view-down)
@@ -39,3 +51,17 @@ Return #f if nothing found."
 
 ;; Normal state with its keymap
 (define-once normal-state `((name . "normal") (keymap . ,normal-state-keymap)))
+
+;; Keymap of insert state
+;; A keymap links keysequences to symbols. These symbols are called as functions later
+;; (alist->hash-table '(()))
+(define-once insert-state-keymap
+  (alist->hashx-table
+   keymap-hash
+   keymap-assoc
+   `(;; FIXME : This i binding is only here for the test
+     ("q" . ,(self-insert-factory "q"))
+     ("[ESC]" . ,switch-to-normal-state))))
+
+;; Insert state with its keymap
+(define-once insert-state `((name . "insert") (keymap . ,insert-state-keymap)))
