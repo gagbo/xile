@@ -8,6 +8,8 @@
   #:use-module (sdl2 surface)
   #:use-module (sdl2 ttf)
   #:use-module (sdl2 video)
+  #:use-module (xile std process)
+  #:use-module (xile std buffer)
   #:use-module (xile sdl window)
   #:use-module (xile sdl input)
   #:use-module (xile sdl callbacks)
@@ -73,8 +75,10 @@
                       (begin
                         (when debug-key-presses
                           (format #t "Handled key press : received ~a -> ~a~%" key-sequence binding))
-                        ((current-buffer binding))
-                        (loop (poll-event) ""))
+                        (binding)
+                        (if (eq? (procedure-name binding) 'kill-xile)
+                            #f
+                            (loop (poll-event) "")))
                       (begin
                        (format #t "Received ~a : key sequence is ~a~%" new-key new-key-sequence)
                        ;; TODO : the code that resets the key-sequence if too long is hidden here. Needs to be

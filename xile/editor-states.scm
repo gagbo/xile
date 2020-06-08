@@ -2,6 +2,8 @@
 ;; Editor states and keymaps
 
 (define-module (xile editor-states)
+  #:use-module (xile std process)
+  #:use-module (xile std buffer)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-13)
   #:use-module (ice-9 hash-table)
@@ -27,11 +29,11 @@ Return #f if nothing found."
   (alist->hashx-table
    keymap-hash
    keymap-assoc
-   '(("q" . quit)
-     ("[DOWN]" . move_down)
-     ("[UP]" . move_up)
-     ("[NPAGE]" . scroll-view-down)
-     ("[PPAGE]" . scroll-view-up))))
+   `(("q" . ,kill-xile)
+     ("[DOWN]" . ,move_down)
+     ("[UP]" . ,move_up)
+     ("[NPAGE]" . ,scroll-view-down)
+     ("[PPAGE]" . ,scroll-view-up))))
 
 ;; Normal state with its keymap
 (define-once normal-state `((name . "normal") (keymap . ,normal-state-keymap)))
