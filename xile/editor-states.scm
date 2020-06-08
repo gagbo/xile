@@ -30,6 +30,8 @@ Return #f if nothing found."
    keymap-hash
    keymap-assoc
    `(("q" . ,kill-xile)
+     ;; FIXME : This i binding is only here for the test
+     ("i" . ,(self-insert-factory "i"))
      ("[DOWN]" . ,move_down)
      ("[UP]" . ,move_up)
      ("[NPAGE]" . ,scroll-view-down)
