@@ -56,6 +56,11 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
         (set! current-view (cons min-line max-line))
         (rpc-send-notif (xile-msg-edit-scroll (xile-buffer-state-view_id bufstate) min-line max-line)))
 
+      (define (insert chars)
+        "Insert CHARS"
+        (set! dirty-state #t)
+        (rpc-send-notif (xile-msg-edit-insert (xile-buffer-state-view_id bufstate) chars)))
+
       (define* (scroll-view-down #:optional (lines 1))
         "Scroll the view down LINES lines."
         (let ((current-min-line (car current-view))
@@ -197,6 +202,7 @@ as of 2020-03-09, xi doesn't handle multiple views of a single file."
                 ((eq? m 'get-var) get-local-variable)
                 ((eq? m 'set-var!) set-local-variable!)
                 ((eq? m 'create-view) create-view)
+                ((eq? m 'insert) insert)
                 ((eq? m 'scroll) scroll)
                 ((eq? m 'scroll-view-up) scroll-view-up)
                 ((eq? m 'scroll-view-down) scroll-view-down)

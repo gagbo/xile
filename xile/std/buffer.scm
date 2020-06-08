@@ -26,10 +26,14 @@
   "Scroll the view BUFFER up one line."
   ((buffer 'scroll-view-up)))
 
-(define* (self-insert-factory ch #:key (count 1))
-  "Insert KEY COUNT times.
-For ease of usage in insert-mode keymap, this is a factory that return a procedure."
-  ;; TODO : let-bind the procedure and set the metadata correctly
-  ;; using (set-procedure-property! proc {name,documentation} value)
-  (lambda ()
-    (format #t "SELF INSERT : inserting ~a ~a times~%" ch count)))
+(define* (self-insert-factory ch)
+  "Return a procedure that inserts CH COUNT times in BUFFER.
+For ease of usage in insert-mode keymap."
+  ;; TODO : try to use a caching system if keys are hit multiple times
+  (let ((ret-proc
+         (lambda* (#:key (count 1) (buffer current-buffer))
+           (format #t "SELF INSERT : inserting ~a ~a times in ~a~%" ch count buffer)
+           ((buffer 'insert) ch))))
+    (set-procedure-property! ret-proc 'name (string-concatenate (list "self-insert-" ch)))
+    (set-procedure-property! ret-proc 'documentation "Insert COUNT times the typed keys in BUFFER.")
+    ret-proc))

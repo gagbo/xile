@@ -29,10 +29,10 @@
   "{\"id\":3,\"method\":\"edit\",\"params\":{\"method\":\"copy\",\"view_id\":\"test_view\",\"params\":{}}}")
 (test-equal "Edit->Insert message with empty data"
   (cdr (xile-msg-edit-insert "test_view" ""))
-  "{\"id\":4,\"method\":\"edit\",\"params\":{\"method\":\"insert\",\"view_id\":\"test_view\",\"params\":{\"chars\":\"\"}}}")
+  "{\"method\":\"edit\",\"params\":{\"method\":\"insert\",\"view_id\":\"test_view\",\"params\":{\"chars\":\"\"}}}")
 (test-equal "Edit->Paste message with data"
   (cdr (xile-msg-edit-paste "test_view" "password"))
-  "{\"id\":5,\"method\":\"edit\",\"params\":{\"method\":\"paste\",\"view_id\":\"test_view\",\"params\":{\"chars\":\"password\"}}}")
+  "{\"id\":4,\"method\":\"edit\",\"params\":{\"method\":\"paste\",\"view_id\":\"test_view\",\"params\":{\"chars\":\"password\"}}}")
 (test-equal "Edit->Move Right notification"
   (cdr (xile-msg-edit-move_right "test_view"))
   "{\"method\":\"edit\",\"params\":{\"method\":\"move_right\",\"view_id\":\"test_view\",\"params\":{}}}")

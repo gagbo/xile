@@ -173,7 +173,9 @@ with individual inner methods used later"
   "insert {\"chars\":\"A\"}
 
 Inserts the chars string at the current cursor locations."
-  (xile-msg-edit-generic 'insert view_id #:edit-param-alist `((chars . ,chars))))
+  (xile-notif-generic
+   'edit
+   #:notif-param-alist `((method . insert) (view_id . ,view_id) (params . ((chars . ,chars))))))
 
 (define* (xile-msg-edit-paste view_id chars)
   "paste {\"chars\": \"password\"}

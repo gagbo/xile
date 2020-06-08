@@ -10,6 +10,7 @@ Editor using GNU Guile and libraries.
     - [[#sdl2][SDL2]]
     - [[#curses][Curses]]
   - [[#test-script][Test script]]
+  - [[#logs][Logs]]
   - [[#stop][Stop]]
 - [[#dependencies][Dependencies]]
 - [[#roadmap][Roadmap]]
@@ -41,6 +42,17 @@ You can start the (older, not really maintained nor finished) ncurses version in
 For the time being we are just opening this README file to see how it's
 displayed.
 
+You can :
+- switch to insert state using =i=
+- Insert letters at this point
+- use =[ESC]= to switch back to normal state
+
+There is no visual indicator for the current state, and it's possible not all
+letters are supported in insert state. The list can be found looking at how many
+keys are bound to some sort of =self-insert-*= function in [[./xile/editor-states.scm][Editor States]] module
+(in the =insert-state-keymap= variable probably).
+
+** Logs
 All the logs are located in the [[./logs][logs]] folder after the run :
 - xi-core.log :: hold the logs from Xi editor process
 - xile-listen-{out,err}.log :: hold the logs from xile functions regarding
@@ -49,8 +61,8 @@ All the logs are located in the [[./logs][logs]] folder after the run :
   callbacks
 
 ** Stop
-Hit =q= to stop Xile (it may error out, but you're still out, right ?). In SDL
-you can also send a quit-event.
+Hit =q= _in normal state_ to stop Xile (it may error out, but you're still out,
+right ?). In SDL you can also send a quit-event.
 
 * Dependencies
 
