@@ -34,6 +34,7 @@
     ;; FIXME : Sometimes this bugs out, as in :
     ;; - the window only flashes quickly
     ;; - After the terminal doesn't give back control and doesn't pipe anything to xile process.
+    ;; There is probably a race condition that needs help debugging
     (call-with-window
         (make-xile-window)
       (lambda (window)
