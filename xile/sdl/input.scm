@@ -77,9 +77,11 @@ Control-M from hitting C then - then M."
 ;;;; Escaped char
          ((eq? (keyboard-event-key event) 'left-bracket)
           "[[")
-;;;; Return
+;;;; Special keys
          ((eq? (keyboard-event-key event) 'return)
           "[RET]")
+         ((eq? (keyboard-event-key event) 'escape)
+          "[ESC]")
          ((eq? (keyboard-event-key event) 'page-up)
           "[PPAGE]")
          ((eq? (keyboard-event-key event) 'page-down)
