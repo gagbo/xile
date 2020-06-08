@@ -69,25 +69,25 @@
                         '(left-shift right-shift left-control right-control left-alt right-alt left-gui right-gui))
                 (loop (poll-event) key-sequence))
                (else
-                (let* ((new-key (keyboard-event->string-sequence event))
-                       (new-key-sequence (key-sequence-add key-sequence new-key))
+                (let* ((current-key (keyboard-event->string-sequence event))
+                       (current-key-sequence (key-sequence-add key-sequence current-key))
                        (editor-state (eval current-state (resolve-module '(xile editor-states))))
-                       (binding (find-binding (assoc-ref editor-state 'keymap) new-key-sequence)))
+                       (binding (find-binding (assoc-ref editor-state 'keymap) current-key-sequence)))
                   (if binding
                       (begin
                         (when debug-key-presses
-                          (format #t "Handled key press (~a state) : received ~a -> ~a~%" (assoc-ref editor-state 'name) key-sequence (procedure-name binding)))
+                          (format #t "Handled key press (~a state) : received ~a -> ~a~%" (assoc-ref editor-state 'name) current-key-sequence (procedure-name binding)))
                         (binding)
                         (if (eq? (procedure-name binding) 'kill-xile)
                             #f
                             (loop (poll-event) "")))
                       (begin
-                       (format #t "Received ~a : key sequence is ~a~%" new-key new-key-sequence)
+                       (format #t "Received ~a : key sequence is ~a~%" current-key current-key-sequence)
                        ;; TODO : the code that resets the key-sequence if too long is hidden here. Needs to be
                        ;; in a "brighter" location
-                       (loop (poll-event) (if (> 3 (key-sequence-length new-key-sequence))
+                       (loop (poll-event) (if (> 3 (key-sequence-length current-key-sequence))
                                               ""
-                                              new-key-sequence))))))))
+                                              current-key-sequence))))))))
              (else
               (when event (format #t "Unhandled event : received ~a~%" event))
               (loop (poll-event) key-sequence)))))))
