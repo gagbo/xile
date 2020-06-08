@@ -4,7 +4,6 @@
 
 (define-module (xile variables)
   #:use-module (ice-9 threads)
-  #:use-module (xile editor-states)
   #:export (first-file
             languages-available
             themes-available
@@ -66,7 +65,7 @@
 
 ;; The current state with its keymap
 ;; A keymap is a hash-table mapping key sequences to functions
-(define-once current-state normal-state)
+(define-once current-state 'normal-state)
 
 ;; The current buffer to send buffer-local commands to
 (define-once current-buffer #f)

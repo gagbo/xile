@@ -71,11 +71,12 @@
                (else
                 (let* ((new-key (keyboard-event->string-sequence event))
                        (new-key-sequence (key-sequence-add key-sequence new-key))
-                       (binding (find-binding (assoc-ref current-state 'keymap) new-key-sequence)))
+                       (editor-state (eval current-state (resolve-module '(xile editor-states))))
+                       (binding (find-binding (assoc-ref editor-state 'keymap) new-key-sequence)))
                   (if binding
                       (begin
                         (when debug-key-presses
-                          (format #t "Handled key press : received ~a -> ~a~%" key-sequence binding))
+                          (format #t "Handled key press (~a state) : received ~a -> ~a~%" (assoc-ref editor-state 'name) key-sequence (procedure-name binding)))
                         (binding)
                         (if (eq? (procedure-name binding) 'kill-xile)
                             #f
