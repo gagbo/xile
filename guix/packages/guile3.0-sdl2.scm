@@ -12,6 +12,15 @@
              (gnu packages pkg-config)
              (gnu packages guile)
              (gnu packages sdl))
+
+(define-syntax-rule (search-our-patches file-name ...)
+  "Return the list of absolute file names corresponding to each
+FILE-NAME found in ./patches relative to the current file."
+  (parameterize
+      ((%patch-path (list (string-append (dirname (current-filename)) "/patches"))))
+    (list (search-patch file-name) ...)))
+
+
 (package
  (name "guile-sdl2")
  (version "0.5.1")
@@ -26,7 +35,7 @@
    (sha256
     (base32
       "1rpxbpfxz3lan70lcfmi1kbapsjnj52s6vy6p0bqj7way6535sq6"))
-   (patches (search-patches "0001-ttf-add-more-bindings.patch"))))
+   (patches (search-our-patches "0001-ttf-add-more-bindings.patch"))))
  (build-system gnu-build-system)
  (arguments
   '(#:make-flags '("GUILE_AUTO_COMPILE=0")
