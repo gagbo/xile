@@ -26,19 +26,18 @@ FILE-NAME found in ./patches relative to the current file."
 (define guile-3.0-sdl2
 (package
  (name "guile-3.0-sdl2")
- (version "0.5.1")
+ (version "20210115.dbc5984")
  (source
   (origin
    (method git-fetch)
    (uri
     (git-reference
      (url "https://git.dthompson.us/guile-sdl2.git")
-     (commit "1b7cdecf240859baa497f10215f3ebf72ec46963")))
+     (commit "dbc5984dc1360944f4dd15f9d846829fab99f04d")))
    (file-name (git-file-name name version))
    (sha256
     (base32
-      "1rpxbpfxz3lan70lcfmi1kbapsjnj52s6vy6p0bqj7way6535sq6"))
-   (patches (search-our-patches "0001-ttf-add-more-bindings.patch"))))
+      "1p1lhjgmis23i9wbg0z2rg1ar38rqbg2icz4nrnwg4j4r784c9ib"))))
  (build-system gnu-build-system)
  (arguments
   '(#:make-flags '("GUILE_AUTO_COMPILE=0")

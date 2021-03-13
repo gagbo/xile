@@ -13,6 +13,7 @@
   #:use-module (xile buffer state)          ; For xile-buffer-state record
   #:use-module (xile variables)             ; For global variables
   #:use-module (ice-9 match)
+  #:use-module (ice-9 receive)
   #:use-module (ice-9 threads)              ; For the with-mutex
   #:use-module (srfi srfi-1)                ; Find
   #:use-module (srfi srfi-43)               ; Vectors
@@ -33,19 +34,20 @@
 
 This is better used with a monospace font,
 as only a few characters are sampled to guess the grid size to use."
-  (let* ((metrics (font-glyph-metrics font #\f))
-         (advance (car (cddddr metrics)))
-         (line-skip (font-line-skip font)))
-    (cons advance line-skip)))
+  (let ((line-skip (font-line-skip font)))
+    (receive (minx miny maxx maxy advance)
+        (font-glyph-metrics font #\f)
+      (cons advance line-skip))))
 
 (define (grid-size window font)
   "Return the size of the text grid in WINDOW using given FONT.
 
 The result is given as a pair (grid-width . grid-height)"
-  (let ((grid-unit (grid-unit-size font))
-        (win-size (window-size window)))
-    (cons (quotient (car win-size) (car grid-unit))
-          (quotient (cadr win-size) (cdr grid-unit)))))
+  (let ((grid-unit (grid-unit-size font)))
+    (receive (winW winH)
+        (window-size window)
+      (cons (quotient winW (car grid-unit))
+            (quotient winH (cdr grid-unit))))))
 
 (define* (grid-to-px font #:key (y 0) (x 0))
   "Return the pixel positions to use for position (X, Y) in the grid using FONT.
