@@ -6,14 +6,14 @@
              (guix git-download)
              (guix build-system gnu)
              ((guix build utils) #:select (with-directory-excursion))
-             (gnu packages texinfo)
-             (gnu packages ncurses)
-             (gnu packages guile-xyz)
              (gnu packages)
              (gnu packages autotools)
-             (gnu packages pkg-config)
              (gnu packages guile)
-             (gnu packages sdl))
+             (gnu packages guile-xyz)
+             (gnu packages ncurses)
+             (gnu packages pkg-config)
+             (gnu packages sdl)
+             (gnu packages texinfo))
 
 (define-syntax-rule (search-our-patches file-name ...)
   "Return the list of absolute file names corresponding to each
@@ -93,5 +93,7 @@ FILE-NAME found in ./patches relative to the current file."
 (list ;; The Basics
   guile-3.0
   guile-3.0-sdl2
-  guile-3.0-ncurses-with-gpm))
+  guile-3.0-ncurses-with-gpm
+  guile-readline
+  guile-json-3))
 
