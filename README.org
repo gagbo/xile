@@ -25,19 +25,24 @@ Update the submodule and =cargo build --release= the bundled [[https://github.co
 By default it will load a user config located in this repo in =config/xile.scm=.
 It's hardcoded for now but hopefully will be configurable later.
 
+*** Dependencies
+
+All dependencies are managed with guix shell, you can setup direnv to work properly with
+```bash
+eval $(guix shell -Df guix.scm --search-paths)
+path_add GUILE_LOAD_PATH src
+```
+
 *** SDL2
-If you have a working guile with the patched version of =guile-sdl2= and =guile-json-scm=
-support, it is as simple as
 #+BEGIN_SRC bash
-./xile.scm
+./examples/sdl.scm
 #+END_SRC
 
 *** Curses
-You can start the (older, not really maintained nor finished) ncurses version in 2 changes :
-- changing the [[./xile.scm][xile.scm]] file to use =(xile application curses)= module instead
-  of the =(xile application sdl)= one
-- changing the =(start-xile-in-sdl (xile-setup))= call to =(start-xile-in-curses (xile-setup))=
- 
+#+BEGIN_SRC bash
+./examples/curses.scm
+#+END_SRC
+
 ** Test script
 For the time being we are just opening this README file to see how it's
 displayed.
@@ -64,17 +69,7 @@ All the logs are located in the [[./logs][logs]] folder after the run :
 Hit =q= _in normal state_ to stop Xile (it may error out, but you're still out,
 right ?). In SDL you can also send a quit-event.
 
-* Dependencies
 
-I target Guile 3.0 with this little endeavour. The [[./guix_deps][Guix Deps]] directory contains
-package definitions for the dependencies which are not yet in guix packages. The
-dependencies currently needed may or may not be in guix packages, I stopped
-following those versions closely for now, as the packages files in guix deps are
-working with Guix and are version-controlled.
-
-Note that the project is using a patched version of guile-sdl2 (the patch is
-currently being reviewed for upstream inclusion). The patch is mostly
-additionnal ttf bindings to be able to draw and manage a text-grid in Guile.
 
 * Roadmap
 - [X] Display buffer ::
